@@ -1,0 +1,501 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="clang的过渡要想搞清楚Pass添加和执行的过程首先要清楚如何从编译前段的clang过渡到LLVM。 当AST构建完成之后交给ASTConsumer的子类BackendConsumer处理。首先将会通过CodeGenerator来完成从AST到IR的转换。转换完成之后调用HandleTranslationUnit">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLVM Pass从添加到执行的过程">
+<meta property="og:url" content="http://example.com/2018/04/14/LLVM-Pass-add-process/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="clang的过渡要想搞清楚Pass添加和执行的过程首先要清楚如何从编译前段的clang过渡到LLVM。 当AST构建完成之后交给ASTConsumer的子类BackendConsumer处理。首先将会通过CodeGenerator来完成从AST到IR的转换。转换完成之后调用HandleTranslationUnit">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-04-14T06:45:31.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:53:19.463Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="LLVM">
+<meta property="article:tag" content="Compiler">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>LLVM Pass从添加到执行的过程 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="LLVM Pass从添加到执行的过程">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2018-04-14 14:45" pubdate>
+        2018年4月14日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      8.6k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      72 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">LLVM Pass从添加到执行的过程</h1>
+            
+            <div class="markdown-body">
+              <h2 id="clang的过渡"><a href="#clang的过渡" class="headerlink" title="clang的过渡"></a>clang的过渡</h2><p>要想搞清楚Pass添加和执行的过程首先要清楚如何从编译前段的clang过渡到LLVM。</p>
+<p>当AST构建完成之后交给ASTConsumer的子类BackendConsumer处理。首先将会通过CodeGenerator来完成从AST到IR的转换。转换完成之后调用HandleTranslationUnit <span id="more"></span></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-built_in">EmbedBitcode</span>(<span class="hljs-built_in">getModule</span>(), CodeGenOpts, llvm::<span class="hljs-built_in">MemoryBufferRef</span>());<br><br><span class="hljs-built_in">EmitBackendOutput</span>(Diags, HeaderSearchOpts, CodeGenOpts, TargetOpts,<br>                  LangOpts, C.<span class="hljs-built_in">getTargetInfo</span>().<span class="hljs-built_in">getDataLayout</span>(),<br>                  <span class="hljs-built_in">getModule</span>(), Action, std::<span class="hljs-built_in">move</span>(AsmOutStream));<br></code></pre></td></tr></table></figure>
+
+<p>这里会调用两个函数，EmbedBitcode用于处理 -fembed-bitcode 参数，目的是用于在生成的obj文件中增加一个用于存放bitcode的section。</p>
+<p>EmitBackendOutput定义位于BackendUtil.cpp中。函数中会定义一个AsmHelper，并且调用EmitAssembly或者EmitAssemblyWithNewPassManager</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (CGOpts.ExperimentalNewPassManager)<br>  AsmHelper.<span class="hljs-built_in">EmitAssemblyWithNewPassManager</span>(Action, std::<span class="hljs-built_in">move</span>(OS));<br><span class="hljs-keyword">else</span><br>  AsmHelper.<span class="hljs-built_in">EmitAssembly</span>(Action, std::<span class="hljs-built_in">move</span>(OS));<br></code></pre></td></tr></table></figure>
+
+<p>BackendUtil.cpp文件仍然位于clang中，但是这里离LLVM已经相当接近了</p>
+<p>重点看EmitAssembly</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs C++">legacy::PassManager PerModulePasses;<br>PerModulePasses.<span class="hljs-built_in">add</span>(<br>    <span class="hljs-built_in">createTargetTransformInfoWrapperPass</span>(<span class="hljs-built_in">getTargetIRAnalysis</span>()));<br><br><span class="hljs-function">legacy::FunctionPassManager <span class="hljs-title">PerFunctionPasses</span><span class="hljs-params">(TheModule)</span></span>;<br>PerFunctionPasses.<span class="hljs-built_in">add</span>(<br>    <span class="hljs-built_in">createTargetTransformInfoWrapperPass</span>(<span class="hljs-built_in">getTargetIRAnalysis</span>()));<br><br><span class="hljs-built_in">CreatePasses</span>(PerModulePasses, PerFunctionPasses);<br></code></pre></td></tr></table></figure>
+
+<p>这里生成两个PassManager，一个管理ModulePass，一个管理FunctionPass。CreatePasses中完成两个PassManager队与Pass的添加管理。</p>
+<p>除了PerModulePasses和PerFunctionPasses之外还有一个CodeGenPasses，根据CodeGenOpts的编译要求来添加用于指令转换、生成的Pass</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs C++">legacy::PassManager CodeGenPasses;<br>CodeGenPasses.<span class="hljs-built_in">add</span>(<br>    <span class="hljs-built_in">createTargetTransformInfoWrapperPass</span>(<span class="hljs-built_in">getTargetIRAnalysis</span>()));<br><br>std::unique_ptr&lt;raw_fd_ostream&gt; ThinLinkOS;<br><br><span class="hljs-built_in"><span class="hljs-keyword">switch</span></span> (Action) &#123;<br><span class="hljs-keyword">case</span> Backend_EmitNothing:<br>  <span class="hljs-keyword">break</span>;<br><br><span class="hljs-keyword">case</span> Backend_EmitBC:<br>  <span class="hljs-keyword">if</span> (CodeGenOpts.EmitSummaryIndex) &#123;<br>    <span class="hljs-keyword">if</span> (!CodeGenOpts.ThinLinkBitcodeFile.<span class="hljs-built_in">empty</span>()) &#123;<br>      std::error_code EC;<br>      ThinLinkOS.<span class="hljs-built_in">reset</span>(<span class="hljs-keyword">new</span> llvm::<span class="hljs-built_in">raw_fd_ostream</span>(<br>          CodeGenOpts.ThinLinkBitcodeFile, EC,<br>          llvm::sys::fs::F_None));<br>      <span class="hljs-keyword">if</span> (EC) &#123;<br>        Diags.<span class="hljs-built_in">Report</span>(diag::err_fe_unable_to_open_output) &lt;&lt; CodeGenOpts.ThinLinkBitcodeFile<br>                                                         &lt;&lt; EC.<span class="hljs-built_in">message</span>();<br>        <span class="hljs-keyword">return</span>;<br>      &#125;<br>    &#125;<br>    PerModulePasses.<span class="hljs-built_in">add</span>(<br>        <span class="hljs-built_in">createWriteThinLTOBitcodePass</span>(*OS, ThinLinkOS.<span class="hljs-built_in">get</span>()));<br>  &#125;<br>  <span class="hljs-keyword">else</span><br>    PerModulePasses.<span class="hljs-built_in">add</span>(<br>        <span class="hljs-built_in">createBitcodeWriterPass</span>(*OS, CodeGenOpts.EmitLLVMUseLists));<br>  <span class="hljs-keyword">break</span>;<br><br><span class="hljs-keyword">case</span> Backend_EmitLL:<br>  PerModulePasses.<span class="hljs-built_in">add</span>(<br>      <span class="hljs-built_in">createPrintModulePass</span>(*OS, <span class="hljs-string">&quot;&quot;</span>, CodeGenOpts.EmitLLVMUseLists));<br>  <span class="hljs-keyword">break</span>;<br><br><span class="hljs-keyword">default</span>:<br>  <span class="hljs-keyword">if</span> (!<span class="hljs-built_in">AddEmitPasses</span>(CodeGenPasses, Action, *OS))<br>    <span class="hljs-keyword">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>当Pass添加完成就开始逐个启动</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs C++">&#123;<br>  <span class="hljs-function">PrettyStackTraceString <span class="hljs-title">CrashInfo</span><span class="hljs-params">(<span class="hljs-string">&quot;Per-function optimization&quot;</span>)</span></span>;<br><br>  PerFunctionPasses.<span class="hljs-built_in">doInitialization</span>();<br>  <span class="hljs-keyword">for</span> (Function &amp;F : *TheModule)<br>    <span class="hljs-keyword">if</span> (!F.<span class="hljs-built_in">isDeclaration</span>())<br>      PerFunctionPasses.<span class="hljs-built_in">run</span>(F);<br>  PerFunctionPasses.<span class="hljs-built_in">doFinalization</span>();<br>&#125;<br><br>&#123;<br>  <span class="hljs-function">PrettyStackTraceString <span class="hljs-title">CrashInfo</span><span class="hljs-params">(<span class="hljs-string">&quot;Per-module optimization passes&quot;</span>)</span></span>;<br>  PerModulePasses.<span class="hljs-built_in">run</span>(*TheModule);<br>&#125;<br><br>&#123;<br>  <span class="hljs-function">PrettyStackTraceString <span class="hljs-title">CrashInfo</span><span class="hljs-params">(<span class="hljs-string">&quot;Code generation&quot;</span>)</span></span>;<br>  CodeGenPasses.<span class="hljs-built_in">run</span>(*TheModule);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>当Pass开始执行也就正式进入LLVM代码的范畴，执行完成后再返回到clang。</p>
+<h2 id="PassManagerBuilder与addExtension"><a href="#PassManagerBuilder与addExtension" class="headerlink" title="PassManagerBuilder与addExtension"></a>PassManagerBuilder与addExtension</h2><p>回头再看CreatePasses中的内容，首先是有一个将PassManagerBuilder与LangOptions和CGOpts封装在一起的wrapper</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-comment">// We need this wrapper to access LangOpts and CGOpts from extension functions</span><br><span class="hljs-comment">// that we add to the PassManagerBuilder.</span><br><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PassManagerBuilderWrapper</span> :</span> <span class="hljs-keyword">public</span> PassManagerBuilder &#123;<br><span class="hljs-keyword">public</span>:<br>  <span class="hljs-built_in">PassManagerBuilderWrapper</span>(<span class="hljs-keyword">const</span> Triple &amp;TargetTriple,<br>                            <span class="hljs-keyword">const</span> CodeGenOptions &amp;CGOpts,<br>                            <span class="hljs-keyword">const</span> LangOptions &amp;LangOpts)<br>      : <span class="hljs-built_in">PassManagerBuilder</span>(), <span class="hljs-built_in">TargetTriple</span>(TargetTriple), <span class="hljs-built_in">CGOpts</span>(CGOpts),<br>        <span class="hljs-built_in">LangOpts</span>(LangOpts) &#123;&#125;<br>  <span class="hljs-function"><span class="hljs-keyword">const</span> Triple &amp;<span class="hljs-title">getTargetTriple</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> </span>&#123; <span class="hljs-keyword">return</span> TargetTriple; &#125;<br>  <span class="hljs-function"><span class="hljs-keyword">const</span> CodeGenOptions &amp;<span class="hljs-title">getCGOpts</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> </span>&#123; <span class="hljs-keyword">return</span> CGOpts; &#125;<br>  <span class="hljs-function"><span class="hljs-keyword">const</span> LangOptions &amp;<span class="hljs-title">getLangOpts</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> </span>&#123; <span class="hljs-keyword">return</span> LangOpts; &#125;<br><br><span class="hljs-keyword">private</span>:<br>  <span class="hljs-keyword">const</span> Triple &amp;TargetTriple;<br>  <span class="hljs-keyword">const</span> CodeGenOptions &amp;CGOpts;<br>  <span class="hljs-keyword">const</span> LangOptions &amp;LangOpts;<br>&#125;;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>CreatePasses函数中做的首要事情就是生成一个PassManagerBuilder并将CGOpts和LangOpts中的内容绑定到一起</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function">PassManagerBuilderWrapper <span class="hljs-title">PMBuilder</span><span class="hljs-params">(TargetTriple, CodeGenOpts, LangOpts)</span></span>;<br><br><span class="hljs-comment">// At O0 and O1 we only run the always inliner which is more efficient. At</span><br><span class="hljs-comment">// higher optimization levels we run the normal inliner.</span><br><span class="hljs-keyword">if</span> (CodeGenOpts.OptimizationLevel &lt;= <span class="hljs-number">1</span>) &#123;<br>  <span class="hljs-keyword">bool</span> InsertLifetimeIntrinsics = (CodeGenOpts.OptimizationLevel != <span class="hljs-number">0</span> &amp;&amp;<br>                                   !CodeGenOpts.DisableLifetimeMarkers);<br>  PMBuilder.Inliner = <span class="hljs-built_in">createAlwaysInlinerLegacyPass</span>(InsertLifetimeIntrinsics);<br>&#125; <span class="hljs-keyword">else</span> &#123;<br>  <span class="hljs-comment">// We do not want to inline hot callsites for SamplePGO module-summary build</span><br>  <span class="hljs-comment">// because profile annotation will happen again in ThinLTO backend, and we</span><br>  <span class="hljs-comment">// want the IR of the hot path to match the profile.</span><br>  PMBuilder.Inliner = <span class="hljs-built_in">createFunctionInliningPass</span>(<br>      CodeGenOpts.OptimizationLevel, CodeGenOpts.OptimizeSize,<br>      (!CodeGenOpts.SampleProfileFile.<span class="hljs-built_in">empty</span>() &amp;&amp;<br>       CodeGenOpts.EmitSummaryIndex));<br>&#125;<br><br>PMBuilder.OptLevel = CodeGenOpts.OptimizationLevel;<br>PMBuilder.SizeLevel = CodeGenOpts.OptimizeSize;<br>PMBuilder.SLPVectorize = CodeGenOpts.VectorizeSLP;<br>PMBuilder.LoopVectorize = CodeGenOpts.VectorizeLoop;<br><br>PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;<br>PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;<br>PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;<br>PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;<br>PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;<br></code></pre></td></tr></table></figure>
+
+<p>然后根据各种LangOpts和CodeGenOpts使用PassManagerBuilder的addExtension接口。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (CodeGenOpts.DebugInfoForProfiling ||<br>    !CodeGenOpts.SampleProfileFile.<span class="hljs-built_in">empty</span>())<br>  PMBuilder.<span class="hljs-built_in">addExtension</span>(PassManagerBuilder::EP_EarlyAsPossible,<br>                         addAddDiscriminatorsPass);<br><br>...<br><br><span class="hljs-keyword">if</span> (LangOpts.Sanitize.<span class="hljs-built_in">has</span>(SanitizerKind::LocalBounds)) &#123;<br>  PMBuilder.<span class="hljs-built_in">addExtension</span>(PassManagerBuilder::EP_ScalarOptimizerLate,<br>                         addBoundsCheckingPass);<br>  PMBuilder.<span class="hljs-built_in">addExtension</span>(PassManagerBuilder::EP_EnabledOnOptLevel0,<br>                         addBoundsCheckingPass);<br>&#125;<br><br>...<br><br><span class="hljs-keyword">if</span> (LangOpts.Sanitize.<span class="hljs-built_in">hasOneOf</span>(SanitizerKind::Efficiency)) &#123;<br>  PMBuilder.<span class="hljs-built_in">addExtension</span>(PassManagerBuilder::EP_OptimizerLast,<br>                         addEfficiencySanitizerPass);<br>  PMBuilder.<span class="hljs-built_in">addExtension</span>(PassManagerBuilder::EP_EnabledOnOptLevel0,<br>                         addEfficiencySanitizerPass);<br>&#125;<br>...<br></code></pre></td></tr></table></figure>
+
+<p>addExtension接受的第一个参数是ExtensionPointTy类型，指定Pass插入的位置。ExtensionPointTy是一个enum，内容如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-class"><span class="hljs-keyword">enum</span> <span class="hljs-title">ExtensionPointTy</span> &#123;</span><br><span class="hljs-comment">//插入时机尽可能的早，允许在代码从前端出来后就被处理</span><br>EP_EarlyAsPossible,<br><br><span class="hljs-comment">//在模块级优化前</span><br>EP_ModuleOptimizerEarly,<br><br><span class="hljs-comment">//在循环优化后</span><br>EP_LoopOptimizerEnd,<br><br><span class="hljs-comment">//允许插入优化pass在大多数主优化后，在clean-ish优化前</span><br>EP_ScalarOptimizerLate,<br><br><span class="hljs-comment">//在最后</span><br>EP_OptimizerLast,<br><br><span class="hljs-comment">//在vectorizer和其他更高级的平台指定优化之前</span><br>EP_VectorizerStart,<br><br><span class="hljs-comment">//O0下位于inlining pass之后</span><br>EP_EnabledOnOptLevel0,<br><br><span class="hljs-comment">//执行类似于与指令组合的窥孔优化（peephole optimizations），在指令组合pass的每个实例之后</span><br>EP_Peephole,<br><br><span class="hljs-comment">//后期循环的规范化和简化这是最后一个循环优化管道，在循环删除前。</span><br><span class="hljs-comment">//必须是LoopPass的实例，加入到可以删除循环的地方，例如指定平台的循环方言识别</span><br>EP_LateLoopOptimizations,<br><br><span class="hljs-comment">//通过CGPassManager增加CallGraphSCC pass在主CallGraphSCC pass之后，function simplification passe之前</span><br>EP_CGSCCOptimizerLate,<br>&#125;;<br></code></pre></td></tr></table></figure>
+
+<p>后一个参数为ExtensionFn</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">typedef</span> std::function&lt;<span class="hljs-built_in"><span class="hljs-keyword">void</span></span>(<span class="hljs-keyword">const</span> PassManagerBuilder &amp;Builder,<br>                             legacy::PassManagerBase &amp;PM)&gt;<br>      ExtensionFn;<br></code></pre></td></tr></table></figure>
+
+<p>这个函数里主要调用了PassManager的add接口，将指定的Pass加入队列</p>
+<p>PassManagerBuilder中有一个存放Pass添加函数的vector</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs C++">std::vector&lt;std::pair&lt;ExtensionPointTy, ExtensionFn&gt;&gt; Extensions;<br></code></pre></td></tr></table></figure>
+
+<p>addExtension就是将由ExtensionPointTy和ExtensionFn组成的pair添加到vector中</p>
+<h2 id="Pass添加的最后一步"><a href="#Pass添加的最后一步" class="headerlink" title="Pass添加的最后一步"></a>Pass添加的最后一步</h2><p>在CreatePasses的最后，调用populate，完成从Extensions到PassManager的添加过程。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs C++">PMBuilder.<span class="hljs-built_in">populateFunctionPassManager</span>(FPM);<br>PMBuilder.<span class="hljs-built_in">populateModulePassManager</span>(MPM);<br></code></pre></td></tr></table></figure>
+
+<p>以populateModulePassManager为例</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">PassManagerBuilder::populateModulePassManager</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">    legacy::PassManagerBase &amp;MPM)</span> </span>&#123;<br>    <br>  ...<br><br>  <span class="hljs-comment">// If all optimizations are disabled, just run the always-inline pass and,</span><br>  <span class="hljs-comment">// if enabled, the function merging pass.</span><br>  <span class="hljs-keyword">if</span> (OptLevel == <span class="hljs-number">0</span>) &#123;<br>    <span class="hljs-built_in">addPGOInstrPasses</span>(MPM);<br>    <span class="hljs-keyword">if</span> (Inliner) &#123;<br>      MPM.<span class="hljs-built_in">add</span>(Inliner);<br>      Inliner = <span class="hljs-literal">nullptr</span>;<br>    &#125;<br><br>    <span class="hljs-comment">// <span class="hljs-doctag">FIXME:</span> The BarrierNoopPass is a HACK! The inliner pass above implicitly</span><br>    <span class="hljs-comment">// creates a CGSCC pass manager, but we don&#x27;t want to add extensions into</span><br>    <span class="hljs-comment">// that pass manager. To prevent this we insert a no-op module pass to reset</span><br>    <span class="hljs-comment">// the pass manager to get the same behavior as EP_OptimizerLast in non-O0</span><br>    <span class="hljs-comment">// builds. The function merging pass is</span><br>    <span class="hljs-keyword">if</span> (MergeFunctions)<br>      MPM.<span class="hljs-built_in">add</span>(<span class="hljs-built_in">createMergeFunctionsPass</span>());<br>    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">GlobalExtensionsNotEmpty</span>() || !Extensions.<span class="hljs-built_in">empty</span>())<br>      MPM.<span class="hljs-built_in">add</span>(<span class="hljs-built_in">createBarrierNoopPass</span>());<br><br>    <span class="hljs-built_in">addExtensionsToPM</span>(EP_EnabledOnOptLevel0, MPM);<br><br>    <span class="hljs-comment">// Rename anon globals to be able to export them in the summary.</span><br>    <span class="hljs-comment">// This has to be done after we add the extensions to the pass manager</span><br>    <span class="hljs-comment">// as there could be passes (e.g. Adddress sanitizer) which introduce</span><br>    <span class="hljs-comment">// new unnamed globals.</span><br>    <span class="hljs-keyword">if</span> (PrepareForThinLTO)<br>      MPM.<span class="hljs-built_in">add</span>(<span class="hljs-built_in">createNameAnonGlobalPass</span>());<br><br>    <span class="hljs-keyword">return</span>;<br>  &#125;<br>  ...<br>  ...<br></code></pre></td></tr></table></figure>
+
+<p>从Extension这个命令可以看出来，CreatePass更多的是为了将由CodeGenOpts和LangOpts参数指定的内容分类，而populate才是Pass最终进入执行队列的位置。接下来的代码也大致相同，根据OptLevel、LibraryInfo等信息直接调用add函数添加。</p>
+<p>addExtensionsToPM就是将Extensions中的内容添加到PassManager的接口</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">PassManagerBuilder::addExtensionsToPM</span><span class="hljs-params">(ExtensionPointTy ETy,</span></span><br><span class="hljs-params"><span class="hljs-function">                                           legacy::PassManagerBase &amp;PM)</span> <span class="hljs-keyword">const</span> </span>&#123;<br>  <span class="hljs-keyword">if</span> (<span class="hljs-built_in">GlobalExtensionsNotEmpty</span>()) &#123;<br>    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> &amp;Ext : *GlobalExtensions) &#123;<br>      <span class="hljs-keyword">if</span> (Ext.first == ETy)<br>        Ext.<span class="hljs-built_in">second</span>(*<span class="hljs-keyword">this</span>, PM);<br>    &#125;<br>  &#125;<br>  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">unsigned</span> i = <span class="hljs-number">0</span>, e = Extensions.<span class="hljs-built_in">size</span>(); i != e; ++i)<br>    <span class="hljs-keyword">if</span> (Extensions[i].first == ETy)<br>      Extensions[i].<span class="hljs-built_in">second</span>(*<span class="hljs-keyword">this</span>, PM);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Pass的添加大致如此。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Compiler/">Compiler</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/LLVM/">LLVM</a>
+                    
+                      <a class="hover-with-bg" href="/tags/Compiler/">Compiler</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2018/12/24/Typescript-remote-debug/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Typescript remote debug</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2018/03/27/return_by_assign/">
+                        <span class="hidden-mobile">赋值语句返回的原罪</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

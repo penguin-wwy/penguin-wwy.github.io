@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="replace_function_name是由一个完整的clang编译器，在CodeGen时通过修改CodeGenModule::getMangledName函数的流程来达到修改函数名的目的。 项目地址 https:&#x2F;&#x2F;github.com&#x2F;penguin-wwy&#x2F;replace_function_name  详细使用方式和效果对比请看github。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="replace_function_name">
+<meta property="og:url" content="http://example.com/2017/12/21/replace-function-name/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="replace_function_name是由一个完整的clang编译器，在CodeGen时通过修改CodeGenModule::getMangledName函数的流程来达到修改函数名的目的。 项目地址 https:&#x2F;&#x2F;github.com&#x2F;penguin-wwy&#x2F;replace_function_name  详细使用方式和效果对比请看github。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-12-21T07:10:03.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:48:30.583Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="LLVM">
+<meta property="article:tag" content="Security">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>replace_function_name - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="replace_function_name">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2017-12-21 15:10" pubdate>
+        2017年12月21日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5.1k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      43 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">replace_function_name</h1>
+            
+            <div class="markdown-body">
+              <p>replace_function_name是由一个完整的clang编译器，在CodeGen时通过修改CodeGenModule::getMangledName函数的流程来达到修改函数名的目的。</p>
+<p>项目地址 <a target="_blank" rel="noopener" href="https://github.com/penguin-wwy/replace_function_name">https://github.com/penguin-wwy/replace_function_name</a> </p>
+<p>详细使用方式和效果对比请看github。</p>
+<span id="more"></span>
+
+<p>下面来分析实现过程。</p>
+<p>首先看IR生成的过程。</p>
+<p>clang::ParseAST是clang Parse的主要入口</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">clang::ParseAST</span><span class="hljs-params">(Sema &amp;S, <span class="hljs-keyword">bool</span> PrintStats, <span class="hljs-keyword">bool</span> SkipFunctionBodies)</span> </span>&#123;<br>  ...<br>  ASTConsumer *Consumer = &amp;S.<span class="hljs-built_in">getASTConsumer</span>();<br><br>  <span class="hljs-function">std::unique_ptr&lt;Parser&gt; <span class="hljs-title">ParseOP</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">      <span class="hljs-keyword">new</span> Parser(S.getPreprocessor(), S, SkipFunctionBodies))</span></span>;<br>  Parser &amp;P = *ParseOP.<span class="hljs-built_in">get</span>();<br><br>  ...<br><br>  S.<span class="hljs-built_in">getPreprocessor</span>().<span class="hljs-built_in">EnterMainSourceFile</span>();<br>  P.<span class="hljs-built_in">Initialize</span>();<br><br>  Parser::DeclGroupPtrTy ADecl;<br>  ExternalASTSource *External = S.<span class="hljs-built_in">getASTContext</span>().<span class="hljs-built_in">getExternalSource</span>();<br>  <span class="hljs-keyword">if</span> (External)<br>    External-&gt;<span class="hljs-built_in">StartTranslationUnit</span>(Consumer);<br><br>  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">bool</span> AtEOF = P.<span class="hljs-built_in">ParseFirstTopLevelDecl</span>(ADecl); !AtEOF;<br>       AtEOF = P.<span class="hljs-built_in">ParseTopLevelDecl</span>(ADecl)) &#123;<br>    <span class="hljs-comment">// If we got a null return and something *was* parsed, ignore it.  This</span><br>    <span class="hljs-comment">// is due to a top-level semicolon, an action override, or a parse error</span><br>    <span class="hljs-comment">// skipping something.</span><br>    <span class="hljs-keyword">if</span> (ADecl &amp;&amp; !Consumer-&gt;<span class="hljs-built_in">HandleTopLevelDecl</span>(ADecl.<span class="hljs-built_in">get</span>()))<br>      <span class="hljs-keyword">return</span>;<br>  &#125;<br><br>  <span class="hljs-comment">// Process any TopLevelDecls generated by #pragma weak.</span><br>  <span class="hljs-keyword">for</span> (Decl *D : S.<span class="hljs-built_in">WeakTopLevelDecls</span>())<br>    Consumer-&gt;<span class="hljs-built_in">HandleTopLevelDecl</span>(<span class="hljs-built_in">DeclGroupRef</span>(D));<br>  ...<br></code></pre></td></tr></table></figure>
+
+<p>通过ParseTopLevelDecl接口，开始将源码分析生成AST。由于clang的词法分析Lex和Parse是一体的，所以这里也是词法分析的入口。</p>
+<p>从这里获得AST之后进入HandleTopLevelDecl对AST进行处理。这里的consumer是BackendConsumer，HandleTopLevelDecl也只是一个计时的动作，主要是从这里进入CodeGeneratorImpl::HandleTopLevelDecl</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">HandleTopLevelDecl</span><span class="hljs-params">(DeclGroupRef D)</span> <span class="hljs-keyword">override</span> </span>&#123;<br>      <span class="hljs-function">PrettyStackTraceDecl <span class="hljs-title">CrashInfo</span><span class="hljs-params">(*D.begin(), SourceLocation(),</span></span><br><span class="hljs-params"><span class="hljs-function">                                     Context-&gt;getSourceManager(),</span></span><br><span class="hljs-params"><span class="hljs-function">                                     <span class="hljs-string">&quot;LLVM IR generation of declaration&quot;</span>)</span></span>;<br><br>      <span class="hljs-comment">// Recurse.</span><br>      <span class="hljs-keyword">if</span> (llvm::TimePassesIsEnabled) &#123;<br>        LLVMIRGenerationRefCount += <span class="hljs-number">1</span>;<br>        <span class="hljs-keyword">if</span> (LLVMIRGenerationRefCount == <span class="hljs-number">1</span>)<br>          LLVMIRGeneration.<span class="hljs-built_in">startTimer</span>();<br>      &#125;<br><br>      Gen-&gt;<span class="hljs-built_in">HandleTopLevelDecl</span>(D);<br><br>      <span class="hljs-keyword">if</span> (llvm::TimePassesIsEnabled) &#123;<br>        LLVMIRGenerationRefCount -= <span class="hljs-number">1</span>;<br>        <span class="hljs-keyword">if</span> (LLVMIRGenerationRefCount == <span class="hljs-number">0</span>)<br>          LLVMIRGeneration.<span class="hljs-built_in">stopTimer</span>();<br>      &#125;<br><br>      <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>然后是迭代处理DeclGroupRef中的每一个Decl，EmitTopLevelDecl是具体Decl的转化入口。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-comment">// Make sure to emit all elements of a Decl.</span><br><span class="hljs-keyword">for</span> (DeclGroupRef::iterator I = DG.<span class="hljs-built_in">begin</span>(), E = DG.<span class="hljs-built_in">end</span>(); I != E; ++I)<br>  Builder-&gt;<span class="hljs-built_in">EmitTopLevelDecl</span>(*I);<br></code></pre></td></tr></table></figure>
+
+<p>这里就正式进入了CodeGen模块的作用范畴，跟ParseAST就没有关系了。通过Consumer来完成不同功能的使用，看得出clang的设计十分清晰合理。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">CodeGenModule::EmitTopLevelDecl</span><span class="hljs-params">(Decl *D)</span> </span>&#123;<br>	...<br>	<span class="hljs-built_in"><span class="hljs-keyword">switch</span></span> (D-&gt;<span class="hljs-built_in">getKind</span>()) &#123;<br>  <span class="hljs-keyword">case</span> Decl::CXXConversion:<br>  <span class="hljs-keyword">case</span> Decl::CXXMethod:<br>  <span class="hljs-keyword">case</span> Decl::Function:<br>    <span class="hljs-comment">// Skip function templates</span><br>    <span class="hljs-keyword">if</span> (cast&lt;FunctionDecl&gt;(D)-&gt;<span class="hljs-built_in">getDescribedFunctionTemplate</span>() ||<br>        cast&lt;FunctionDecl&gt;(D)-&gt;<span class="hljs-built_in">isLateTemplateParsed</span>())<br>      <span class="hljs-keyword">return</span>;<br><br>    <span class="hljs-built_in">EmitGlobal</span>(cast&lt;FunctionDecl&gt;(D));<br>    <span class="hljs-comment">// Always provide some coverage mapping</span><br>    <span class="hljs-comment">// even for the functions that aren&#x27;t emitted.</span><br>    <span class="hljs-built_in">AddDeferredUnusedCoverageMapping</span>(D);<br>    <span class="hljs-keyword">break</span>;<br>    ...<br></code></pre></td></tr></table></figure>
+
+<p>我们主要关注函数名生成所以看FunctionDecl的处理了。</p>
+<p>在EmitTopLevelDecl中直接空降到函数体的处理</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-comment">// Defer code generation to first use when possible, e.g. if this is an inline</span><br><span class="hljs-comment">// function. If the global must always be emitted, do it eagerly if possible</span><br><span class="hljs-comment">// to benefit from cache locality.</span><br><span class="hljs-keyword">if</span> (<span class="hljs-built_in">MustBeEmitted</span>(Global) &amp;&amp; <span class="hljs-built_in">MayBeEmittedEagerly</span>(Global)) &#123;<br>  <span class="hljs-comment">// Emit the definition if it can&#x27;t be deferred.</span><br>  <span class="hljs-built_in">EmitGlobalDefinition</span>(GD);<br>  <span class="hljs-keyword">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>IR中的函数有define和declare前一种是定义，后一种对应声明，也就是从其他编译单元引用的函数，虽然函数体不在但是会进行函数声明。这里会选择define函数，declare函数会在其他编译单元转化。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">CodeGenModule::EmitGlobalDefinition</span><span class="hljs-params">(GlobalDecl GD, llvm::GlobalValue *GV)</span> </span>&#123;<br>  ...<br><br>    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">const</span> <span class="hljs-keyword">auto</span> *Method = dyn_cast&lt;CXXMethodDecl&gt;(D)) &#123;<br>      <span class="hljs-comment">// Make sure to emit the definition(s) before we emit the thunks.</span><br>      <span class="hljs-comment">// This is necessary for the generation of certain thunks.</span><br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">const</span> <span class="hljs-keyword">auto</span> *CD = dyn_cast&lt;CXXConstructorDecl&gt;(Method))<br>        ABI-&gt;<span class="hljs-built_in">emitCXXStructor</span>(CD, <span class="hljs-built_in">getFromCtorType</span>(GD.<span class="hljs-built_in">getCtorType</span>()));<br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">const</span> <span class="hljs-keyword">auto</span> *DD = dyn_cast&lt;CXXDestructorDecl&gt;(Method))<br>        ABI-&gt;<span class="hljs-built_in">emitCXXStructor</span>(DD, <span class="hljs-built_in">getFromDtorType</span>(GD.<span class="hljs-built_in">getDtorType</span>()));<br>      <span class="hljs-keyword">else</span><br>        <span class="hljs-built_in">EmitGlobalFunctionDefinition</span>(GD, GV);<br><br>      <span class="hljs-keyword">if</span> (Method-&gt;<span class="hljs-built_in">isVirtual</span>())<br>        <span class="hljs-built_in">getVTables</span>().<span class="hljs-built_in">EmitThunks</span>(GD);<br><br>      <span class="hljs-keyword">return</span>;<br>    &#125;<br>  ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>C++构造和析构函数会有单独的处理，其余函数不管是成员函数还是C风格函数都会进入EmitGlobalFunctionDefinition</p>
+<p>EmitGlobalFunctionDefinition通过调用GetAddrOfFunction获取函数原型</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-function">llvm::Constant *<span class="hljs-title">CodeGenModule::GetAddrOfFunction</span><span class="hljs-params">(GlobalDecl GD,</span></span><br><span class="hljs-params"><span class="hljs-function">                                                 llvm::Type *Ty,</span></span><br><span class="hljs-params"><span class="hljs-function">                                                 <span class="hljs-keyword">bool</span> ForVTable,</span></span><br><span class="hljs-params"><span class="hljs-function">                                                 <span class="hljs-keyword">bool</span> DontDefer,</span></span><br><span class="hljs-params"><span class="hljs-function">                                              ForDefinition_t IsForDefinition)</span> </span>&#123;<br>  <span class="hljs-comment">// If there was no specific requested type, just convert it now.</span><br>  <span class="hljs-keyword">if</span> (!Ty) &#123;<br>    <span class="hljs-keyword">const</span> <span class="hljs-keyword">auto</span> *FD = cast&lt;FunctionDecl&gt;(GD.<span class="hljs-built_in">getDecl</span>());<br>    <span class="hljs-keyword">auto</span> CanonTy = Context.<span class="hljs-built_in">getCanonicalType</span>(FD-&gt;<span class="hljs-built_in">getType</span>());<br>    Ty = <span class="hljs-built_in">getTypes</span>().<span class="hljs-built_in">ConvertFunctionType</span>(CanonTy, FD);<br>  &#125;<br><br>  StringRef MangledName = <span class="hljs-built_in">getMangledName</span>(GD);<br>  <span class="hljs-keyword">return</span> <span class="hljs-built_in">GetOrCreateLLVMFunction</span>(MangledName, Ty, GD, ForVTable, DontDefer,<br>                                 <span class="hljs-comment">/*IsThunk=*/</span><span class="hljs-literal">false</span>, llvm::<span class="hljs-built_in">AttributeList</span>(),<br>                                 IsForDefinition);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>getMangledName按照规则将函数的类名、函数名、返回值、参数、平衡栈方式、属性全部用于生成函数独一的函数名，到这里多态、重载这些高级特性统统落地，变成唯一的函数声明和函数调用。</p>
+<p>值得注意的地方在于getMangledName函数中对于函数名会先到MangledDeclNames中去寻找是否已经生成过</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++">StringRef &amp;FoundStr = MangledDeclNames[CanonicalGD];<br>  <span class="hljs-keyword">if</span> (!FoundStr.<span class="hljs-built_in">empty</span>())<br>    <span class="hljs-keyword">return</span> FoundStr;<br></code></pre></td></tr></table></figure>
+
+<p>同时在函数最后，也会将本次生成的函数名与全局变量的对应关系保存下来，用于下次查找</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">auto</span> Result = Manglings.<span class="hljs-built_in">insert</span>(std::<span class="hljs-built_in">make_pair</span>(Str, GD));<br></code></pre></td></tr></table></figure>
+
+<p>这里的Str变量就是最后保存的函数名，也就是IR中对该函数所使用的名称。只要我们此时将它修改，就完成了对于函数名的修改。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">for</span> ( <span class="hljs-keyword">auto</span> I = obfMap.<span class="hljs-built_in">begin</span>(); I != obfMap.<span class="hljs-built_in">end</span>(); I++ ) &#123;<br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">StringRef</span>(I-&gt;first) == Str) &#123;<br>        Str = <span class="hljs-built_in">StringRef</span>(I-&gt;second);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>通过一个字典保存需要替换函数名函数的MangledName，和它对应md5，我们就可以用md5完成对函数名的替换。-</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Open-Source-Project/">Open Source Project</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/LLVM/">LLVM</a>
+                    
+                      <a class="hover-with-bg" href="/tags/Security/">Security</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2018/01/11/LLDB_and_Python/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">LLDB与Python</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2017/12/18/code-obf3/">
+                        <span class="hidden-mobile">代码混淆——复杂度进化</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

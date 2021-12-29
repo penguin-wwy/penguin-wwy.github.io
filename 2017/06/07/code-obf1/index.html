@@ -1,0 +1,501 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="扁平化的定义所谓控制流是指代码执行时指令的执行顺序。在各种控制逻辑的作用下，程序会沿着特定的逻辑顺序执行。一般控制逻辑包括有\无条件分支、循环、函数调用等。在正常情况下程序的逻辑非常好理解（代码逻辑不好的程序员都死了。。。）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="代码混淆——控制流扁平定义与算法">
+<meta property="og:url" content="http://example.com/2017/06/07/code-obf1/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="扁平化的定义所谓控制流是指代码执行时指令的执行顺序。在各种控制逻辑的作用下，程序会沿着特定的逻辑顺序执行。一般控制逻辑包括有\无条件分支、循环、函数调用等。在正常情况下程序的逻辑非常好理解（代码逻辑不好的程序员都死了。。。）">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/1.JPG">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2.JPG">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/3.JPG">
+<meta property="article:published_time" content="2017-06-07T07:31:35.000Z">
+<meta property="article:modified_time" content="2021-12-29T16:02:48.508Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="Security">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/1.JPG">
+  
+  
+  <title>代码混淆——控制流扁平定义与算法 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="代码混淆——控制流扁平定义与算法">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2017-06-07 15:31" pubdate>
+        2017年6月7日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.6k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      31 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">代码混淆——控制流扁平定义与算法</h1>
+            
+            <div class="markdown-body">
+              <h3 id="扁平化的定义"><a href="#扁平化的定义" class="headerlink" title="扁平化的定义"></a>扁平化的定义</h3><p>所谓控制流是指代码执行时指令的执行顺序。在各种控制逻辑的作用下，程序会沿着特定的逻辑顺序执行。一般控制逻辑包括有\无条件分支、循环、函数调用等。在正常情况下程序的逻辑非常好理解（代码逻辑不好的程序员都死了。。。）<span id="more"></span>，开发过程中有各种人为的行为使代码逻辑清晰，便于维护和扩展。但同时，对于逆向行为来说，清晰的代码逻辑会导致很容易抓住程序重点，加快破解速度。而控制流扁平则是反其道而行将源代码结构改变，使得程序的逻辑复杂不易被静态分析，增加逆向难度。</p>
+<p>下面通过一个例子来说明<br>这是《软件加密与解密》中的示例代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">modexp</span><span class="hljs-params">(<span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> x[], <span class="hljs-keyword">int</span> w, <span class="hljs-keyword">int</span> n)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-keyword">int</span> R, L;<br>    <span class="hljs-keyword">int</span> k = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">int</span> s = <span class="hljs-number">1</span>;<br>    <span class="hljs-keyword">while</span>(k &lt; w) &#123;<br>        <span class="hljs-keyword">if</span> (x[k] == <span class="hljs-number">1</span>) &#123;<br>            R = (s * y) % n;<br>        &#125;<br>        <span class="hljs-keyword">else</span> &#123;<br>            R = s;<br>        &#125;<br>        s = R * R % n;<br>        L = R;<br>        k++;<br>    &#125;<br>    <span class="hljs-keyword">return</span> L;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>根据上段代码，我们可以画出它的控制流图。</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/1.JPG" srcset="/img/loading.gif" lazyload></p>
+<p>这里我们用if来代替while，这样可以使得逻辑更加清晰。这幅图就是扁平前的效果，可以看到程序基本是从上往下执行的，逻辑线路非常明确。<br>而当我们对它进行了扁平化处理之后，就变成这样：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">modexp</span><span class="hljs-params">(<span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> x[], <span class="hljs-keyword">int</span> w, <span class="hljs-keyword">int</span> n)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-keyword">int</span> R, L, s, k;<br>    <span class="hljs-keyword">int</span> next = <span class="hljs-number">0</span>;<br>    <span class="hljs-keyword">for</span>(;;) &#123;<br>        <span class="hljs-keyword">switch</span>(next) &#123;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">0</span>: k = <span class="hljs-number">0</span>; s = <span class="hljs-number">1</span>; next = <span class="hljs-number">1</span>; <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">1</span>: <span class="hljs-keyword">if</span>(k&lt;w) next = <span class="hljs-number">2</span>; <span class="hljs-keyword">else</span> next = <span class="hljs-number">6</span>; <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">2</span>: <span class="hljs-keyword">if</span>(x[k]==<span class="hljs-number">1</span>) next = <span class="hljs-number">3</span>; <span class="hljs-keyword">else</span> next = <span class="hljs-number">4</span>; <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">3</span>: R=(s * y) % n; next = <span class="hljs-number">5</span>; <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">4</span>: R = s; next = <span class="hljs-number">5</span>; <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">5</span>: s=R * R % n; L = R; k++; next = <span class="hljs-number">1</span>; <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> <span class="hljs-number">6</span>: <span class="hljs-keyword">return</span> L;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>控制流图变成了这样</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2.JPG" srcset="/img/loading.gif" lazyload></p>
+<p>直观的感觉就是代码变“扁”了，所有的代码都挤到了一层当中，这样做的好处在于在反汇编、反编译静态分析的时候，无法判断哪些代码先执行哪些后执行，必须要通过动态运行才能记录执行顺序，从而加重了分析的负担。</p>
+<h3 id="实现平台"><a href="#实现平台" class="headerlink" title="实现平台"></a>实现平台</h3><p>扁平化的实现是不能平地而起的，必须要基于一定的平台。就是说，不是你随便给我一段代码，让我混淆我就能混。之前的例子很简单，遇到复杂一点的比如while循环里有声明局部变量，while内部的if和else分支都用到这个变量；当混淆后，while循环已经被我们用if改写了，那这个局部变量的声明放到哪里？如果放到替代while的if分支里，由于这个if分支和原来while内部的if-else分支是平级的，那么这个局部变量就不能在if-else分支中使用了。这就是一个bug。所以在混淆前必须对源代码进行分析。</p>
+<p>那用什么东西进行分析呢？答案是编译器，更准确说是编译（解释）器的前端。</p>
+<p>这里要重温一下很有趣的编译原理。以编译语言来讲，从源代码到可执行程序要经历这么几步：预编译——&gt;编译——&gt;汇编——&gt;链接。以GCC来说，预编译对应-E参数，将源代码所有的宏处理展开，包括include头文件。编译则是将预处理完的文件通过词法分析、语法分析等前端处理，生成抽象语法书并转化为中间语言，然后进入编译器后端执行优化策略，输出为汇编语言，对应的GCC参数为-S。汇编是将汇编语言（低级程序语言）转化成对应的可执行的机器码。链接则将生成的多个模块（也可能是一个）间互相引用的部分处理好，让不同的模块可以相互调用。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">//预编译<br>gcc -E test.c -o test.i    <br>//编译 <br>gcc -S test.i -o test.s     <br>//汇编<br>gcc -c test.s -o test.o     <br>//链接<br>ld -static test1.o test2.o tes3.o -start-group -lgcc -lgcc_eh -lc -end-group crtend.o crtn.o<br></code></pre></td></tr></table></figure>
+
+<p>我们平常所说的编译器GCC其实是一套编译体系，包括了编译器、汇编器、链接器，狭义上的编译器只处理从源代码到汇编语言的过程。下文所述的编译器均是狭义上的编译器，不指编译体系。</p>
+<p>对于编译器以中间语言为界限分为前端和后端。前端进行词法分析、语法分析、中间语言生成，后端负责优化。我们所需要的就是词法和语法分析。</p>
+<p>词法分析就是将源代码切割成一个一个的单词。语法分析就是研究源代码的逻辑了。由于篇幅限制（已经很啰嗦了，不过似乎并不能讲清楚），这里就不详细描述了，总之就是经过语法分析，编译器前段会得到抽象语法树，并且获得控制流图，也就是我们之前画的那种。有了控制流图才能在其基础上进行修改，所以一般需要都是采用魔改编译器的方式来完成代码混淆。</p>
+<p>要魔改，编译器最好是开源的，扩展性要好，所以一般都采用clang作为基础。clang是一个由C++编写、基于LLVM编译体系的C/C++/OC编译器。文档链接<a target="_blank" rel="noopener" href="http://clang.llvm.org/docs/index.html%E3%80%82">http://clang.llvm.org/docs/index.html。</a></p>
+<h3 id="算法抽象"><a href="#算法抽象" class="headerlink" title="算法抽象"></a>算法抽象</h3><p>在知晓了平台之后我们就可以开始研究如何进行控制流扁平。一般扁平算法基本步骤如下：</p>
+<p>1、将函数体拆分为多个基本块，构建控制流图。将这些原本属于不同层级的基本块放到同一层级；</p>
+<p>2、将所有基本块封装到一个switch选择分支当中；</p>
+<p>3、用一个状态变量来表示当前状态，进行逻辑顺序控制（上述代码中的next变量）。</p>
+<p>改变原有结构往往会带来一些副作用，比如之前所说的局部变量的声明要提前，否则不同分支无法使用同一个变量。除此之外的副作用还有：</p>
+<p>1、由于声明提前，声明和赋值过程分离，而引用类型需要声明的同时定义，代码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-keyword">while</span>（k&lt;m） &#123;<br>    <span class="hljs-keyword">int</span>&amp; a = k;     <span class="hljs-comment">//引用需同时声明和定义</span><br>    <span class="hljs-keyword">if</span>(...) &#123;<br>        a += ...<br>    &#125;<br>    <span class="hljs-keyword">else</span> &#123;<br>        a -= ...<br>    &#125;<br>    ...<br>&#125;<br> <br><span class="hljs-comment">//混淆后变以下</span><br> <br><span class="hljs-keyword">int</span> &amp;a;             <span class="hljs-comment">//错误</span><br><span class="hljs-keyword">switch</span>(next) &#123;<br><span class="hljs-keyword">case</span> ...:   <span class="hljs-keyword">if</span> (k&lt;m) a = k;<br>...<br><span class="hljs-keyword">case</span> ...:   <span class="hljs-keyword">if</span>(...) a+=...;<span class="hljs-keyword">else</span> a-=...;next=...;<br>...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>2、构造函数和析构函数会因为声明位置而产生副作用。</p>
+<p>3、带来同名变量的问题，即原本不同作用域名称相同的变量变成同作用域名称相同的变量。</p>
+<p>4、try-catch语句可能会遇到的执行顺序问题。</p>
+<p>除了要处理这些副作用之外，源代码中本来的while、do-while、for循环包括原本的switch-case分支统统需要改为if-goto的形式。然后再进行switch-case的封装。</p>
+<p>最终的算法执行顺序为</p>
+<p>标识符重命名（解决变量名冲突）——&gt;控制语句展开（全变成if）——&gt;变量声明提前——&gt;控制流压扁</p>
+<h4 id="标识符重命名"><a href="#标识符重命名" class="headerlink" title="标识符重命名"></a>标识符重命名</h4><p>这个目的很明显就是为了解决变量名冲突，所以按照一定顺序改就行了。</p>
+<h4 id="控制语句展开"><a href="#控制语句展开" class="headerlink" title="控制语句展开"></a>控制语句展开</h4><p>目的是将逻辑控制全变成if-goto逻辑，类似于下图</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/3.JPG" srcset="/img/loading.gif" lazyload>{:height=”50%” width=”50%”}</p>
+<h4 id="变量声明提前"><a href="#变量声明提前" class="headerlink" title="变量声明提前"></a>变量声明提前</h4><p>针对基本类型和指针类型按以下步骤执行：</p>
+<p>(1)将声明提前</p>
+<p>(2)如果原来有初始化行为，则在原来的位置增加赋值语句，用初始化值赋值</p>
+<p>(3)如果没有初始化行为则赋值为0</p>
+<p>引用变量需要变为指针变量按上述步骤执行。</p>
+<p>针对对象的构造和析构按照以下步骤执行：</p>
+<p>(1)在起始处用auto_ptr分配一段对象大小的内存</p>
+<p>(2)在原来初始化的位置用placement new语句对auto_ptr的内存进行初始化</p>
+<p>(3)原始代码中引用对象的位置改为auto_ptr解引用</p>
+<p>(4)在隐式析构的位置显示调用析构函数</p>
+<h4 id="控制流压扁"><a href="#控制流压扁" class="headerlink" title="控制流压扁"></a>控制流压扁</h4><p>最后是控制流压扁的伪代码</p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs awk">对函数有控制流图cfg<br>入口节点为entry<br>出口节点为<span class="hljs-keyword">exit</span><br>count = <span class="hljs-number">0</span><br>构造一个switch，和控制值nextVar<br>foreach node <span class="hljs-keyword">in</span> cfg：<br>    <span class="hljs-keyword">if</span> node != <span class="hljs-keyword">exit</span>：<br>        新建一个case，并包含node的全部内容<br>        若node有一个后继节点：<br>            nextVar = x<br>            x为后继节点的case<br>        若node有两个后继节点a1，a2：<br>            <span class="hljs-keyword">if</span> condition：<br>                nextVar = x<br>            <span class="hljs-keyword">else</span><br>                nextVar = y<br>            x为a1的case，y为a2的case<br>    增加一个<span class="hljs-keyword">break</span>;<br>将上述switch结构封装到一个死循环中<br></code></pre></td></tr></table></figure>
+
+
+<p>PS：本文部分名词解释、图片来自一下资料：</p>
+<p>《软件加密与解密》</p>
+<p>张清泉的硕士论文《基于clang的C++代码混淆工具》</p>
+<p>宋亚齐的硕士论文《基于代码混淆的软件保护技术研究》</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/%E4%BB%A3%E7%A0%81%E6%B7%B7%E6%B7%86/">代码混淆</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Security/">Security</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2017/09/16/C++_type_cast/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">C++类型转化表达式总结</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

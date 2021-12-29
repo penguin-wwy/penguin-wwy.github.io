@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="闲话三个多月磨磨唧唧，终于拿出了一版稍微有那么点样的开源工具–dedx。 链接https:&#x2F;&#x2F;github.com&#x2F;penguin-wwy&#x2F;dedx">
+<meta property="og:type" content="article">
+<meta property="og:title" content="费力的dex字节码转换器">
+<meta property="og:url" content="http://example.com/2019/12/05/dedx/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="闲话三个多月磨磨唧唧，终于拿出了一版稍微有那么点样的开源工具–dedx。 链接https:&#x2F;&#x2F;github.com&#x2F;penguin-wwy&#x2F;dedx">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-12-05T13:02:14.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:50:27.337Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="jvm">
+<meta property="article:tag" content="bytecode">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>费力的dex字节码转换器 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="费力的dex字节码转换器">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2019-12-05 21:02" pubdate>
+        2019年12月5日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.8k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      23 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">费力的dex字节码转换器</h1>
+            
+            <div class="markdown-body">
+              <h3 id="闲话"><a href="#闲话" class="headerlink" title="闲话"></a>闲话</h3><p>三个多月磨磨唧唧，终于拿出了一版稍微有那么点样的开源工具–dedx。</p>
+<p>链接<a target="_blank" rel="noopener" href="https://github.com/penguin-wwy/dedx">https://github.com/penguin-wwy/dedx</a><span id="more"></span></p>
+<p>dedx是一款将apk的smali字节码转换为jvm字节码的转换器。在此之前，我使用过的dex2class的工具主要有两种。</p>
+<p>一种是dex2jar（链接：<a target="_blank" rel="noopener" href="https://github.com/pxb1988/dex2jar%EF%BC%89%E3%80%82">https://github.com/pxb1988/dex2jar）。</a><br>这是一款完成度相当高的开源工具。尤其在Android逆向上基本是人手必备。</p>
+<p>另一种是利用soot（链接：<a target="_blank" rel="noopener" href="https://github.com/Sable/soot%EF%BC%89%E3%80%82">https://github.com/Sable/soot）。</a><br>这是一款完成度也非常高、学术界较常使用的Java optimization framework。soot通过dexlib2将dex文件解析，编译为jimple（soot生成的一种IR），再将jimple转回jvm class，从而达到dex2class的目的。</p>
+<p>dedx的完成度自然是无法和上两个相比。而促使我做这么一个费力不讨好的东西的原因主要有两个：</p>
+<p>1、dex2jar和soot都有各自的不足。dex2jar生成的class并是很不严格，不一定能work。而soot本身过于重量级（我只是想得到一个class文件而已），运行过程会产生太多的分析和依赖；</p>
+<p>2、闲的。</p>
+<p>dedx可能的好处在于，一来dedx使用<a target="_blank" rel="noopener" href="https://github.com/aosp-mirror/platform_dalvik/tree/master/dx">dx</a>作为dex的解析工具（dx是Google Android build tools中的dex编译器，负责将class文件编译为单个class的dex文件）。从而带来指令集上的同步，后续的更新也会更方便。</p>
+<p>二来使用ASM作为jvm的字节码生成，可以生成更高版本的class文件，使用更新的jvm指令。</p>
+<p>除此之外，dedx的class文件生成是以完全的严格的class文件为目标。简单来说，目标是生成可以执行的class文件。</p>
+<h3 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h3><h4 id="Build"><a href="#Build" class="headerlink" title="Build"></a>Build</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">git <span class="hljs-built_in">clone</span> https://github.com/penguin-wwy/dedx.git<br><span class="hljs-built_in">cd</span> dedx<br>./gradlew distZip<br></code></pre></td></tr></table></figure>
+
+<h4 id="Command"><a href="#Command" class="headerlink" title="Command"></a>Command</h4><p>支持黑白名单设置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash">~$ ./dedx -<span class="hljs-built_in">help</span><br>usage: <span class="hljs-built_in">command</span> [options] &lt;dexfile&gt;<br>    --black-classes &lt;[class_name | @file]&gt;   Specify classes <span class="hljs-built_in">which</span> not to<br>                                             load (default none)<br>    --classes &lt;[class_name | @file]&gt;         Specify classes <span class="hljs-built_in">which</span> to load<br>                                             (default all)<br> -g,--debug                                  Print debug info<br> -h,--<span class="hljs-built_in">help</span>                                   Print <span class="hljs-built_in">help</span> message<br>    --<span class="hljs-built_in">log</span> &lt;arg&gt;                              Specify <span class="hljs-built_in">log</span> file<br> -o,--output &lt;dirname&gt;                       Specify output dirname<br>    --opt &lt;[fast|normal]&gt;                    Specify optimization level<br> -v,--version                                Print version<br></code></pre></td></tr></table></figure>
+
+<h4 id="TestCase"><a href="#TestCase" class="headerlink" title="TestCase"></a>TestCase</h4><p>目前dedx自带有少量的测试集（非常少），方便冒烟测试</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gradle -q runTest<br></code></pre></td></tr></table></figure>
+
+<h4 id="使用生成的class文件"><a href="#使用生成的class文件" class="headerlink" title="使用生成的class文件"></a>使用生成的class文件</h4><p>调用dedx，会在指定的output位置生成对应的class文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">dedx -o /path/to/output /project_path/resource/Base.dex<br></code></pre></td></tr></table></figure>
+
+<p>然后可以通过反射调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.lang.reflect.Method;<br><span class="hljs-keyword">import</span> java.nio.file.Files;<br><span class="hljs-keyword">import</span> java.nio.file.Paths;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ExampleLoader</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ClassLoader</span> </span>&#123;<br>    <span class="hljs-keyword">public</span> Class&lt;?&gt; defineClass(String name, <span class="hljs-keyword">byte</span>[] bytes) &#123;<br>        <span class="hljs-keyword">return</span> defineClass(name, bytes, <span class="hljs-number">0</span>, bytes.length);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExampleLoader loader = <span class="hljs-keyword">new</span> ExampleLoader();<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">byte</span>[] bytes = Files.readAllBytes(Paths.get(<span class="hljs-string">&quot;/path/to/Base.class&quot;</span>));<br>            Class baseClass = loader.defineClass(<span class="hljs-string">&quot;com.test.Base&quot;</span>, bytes);<br>            Method addInt = baseClass.getMethod(<span class="hljs-string">&quot;addInt&quot;</span>, <span class="hljs-keyword">int</span>.class, <span class="hljs-keyword">int</span>.class);<br>            <span class="hljs-keyword">assert</span> (Integer) addInt.invoke(<span class="hljs-keyword">null</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>) == <span class="hljs-number">2</span>;<br>        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            e.printStackTrace();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h3><p>目前会在log中统计生成的函数的成功数量</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">record</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">date</span>&gt;</span>2019-12-04T22:54:23<span class="hljs-tag">&lt;/<span class="hljs-name">date</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">millis</span>&gt;</span>1575471263304<span class="hljs-tag">&lt;/<span class="hljs-name">millis</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">sequence</span>&gt;</span>19961<span class="hljs-tag">&lt;/<span class="hljs-name">sequence</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">logger</span>&gt;</span>com.dedx.tools.MainKt<span class="hljs-tag">&lt;/<span class="hljs-name">logger</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">level</span>&gt;</span>INFO<span class="hljs-tag">&lt;/<span class="hljs-name">level</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">class</span>&gt;</span>com.dedx.tools.MainKt<span class="hljs-tag">&lt;/<span class="hljs-name">class</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">method</span>&gt;</span>runMain<span class="hljs-tag">&lt;/<span class="hljs-name">method</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">thread</span>&gt;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">thread</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">message</span>&gt;</span>All method success/fail: 11826/1512<span class="hljs-tag">&lt;/<span class="hljs-name">message</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">record</span>&gt;</span><br></code></pre></td></tr></table></figure>
+
+<p>测试效果，成功率超过88%。这当中包含了包括Android SDK和一些常用的第三方SDK（如zxing）。</p>
+<p>后续计划包含三部分：</p>
+<ul>
+<li>修复各种bug；</li>
+<li>在生成的JvmInst结构上进行指令优化（类型推断、消除冗余指令）；</li>
+<li>将JvmInst进行格式化dump，便于调试使用。</li>
+</ul>
+<p>当前稳定tag为0.0.2,。master分支不保证编译和冒烟测试成功。</p>
+<p>欢迎感兴趣的童鞋一起参与。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Open-Source-Project/">Open Source Project</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/jvm/">jvm</a>
+                    
+                      <a class="hover-with-bg" href="/tags/bytecode/">bytecode</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2021/11/29/restart/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Blog复活辣</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2019/06/19/try_with_resources/">
+                        <span class="hidden-mobile">关于try-with-resources不知道的事</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

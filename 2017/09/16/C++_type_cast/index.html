@@ -1,0 +1,499 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="const_cast根据 http:&#x2F;&#x2F;www.cplusplus.com 的说法，const_cast用于对象指针或引用的const的添加和删除操作 例子如下：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++类型转化表达式总结">
+<meta property="og:url" content="http://example.com/2017/09/16/C++_type_cast/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="const_cast根据 http:&#x2F;&#x2F;www.cplusplus.com 的说法，const_cast用于对象指针或引用的const的添加和删除操作 例子如下：">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-09-16T07:02:14.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:54:17.417Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="C++">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>C++类型转化表达式总结 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="C++类型转化表达式总结">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2017-09-16 15:02" pubdate>
+        2017年9月16日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      6.2k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      52 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">C++类型转化表达式总结</h1>
+            
+            <div class="markdown-body">
+              <h3 id="const-cast"><a href="#const-cast" class="headerlink" title="const_cast"></a>const_cast</h3><p>根据 <a target="_blank" rel="noopener" href="http://www.cplusplus.com/">http://www.cplusplus.com</a> 的说法，const_cast用于对象指针或引用的const的添加和删除操作</p>
+<p>例子如下：</p>
+<span id="more"></span>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-comment">// const_cast</span><br><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span><br><span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> std;<br><br><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">print</span> <span class="hljs-params">(<span class="hljs-keyword">char</span> * str)</span></span><br><span class="hljs-function"></span>&#123;<br>  cout &lt;&lt; str &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span> <span class="hljs-params">()</span> </span>&#123;<br>  <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> * c = <span class="hljs-string">&quot;sample text&quot;</span>;<br>  <span class="hljs-built_in">print</span> ( <span class="hljs-keyword">const_cast</span>&lt;<span class="hljs-keyword">char</span> *&gt; (c) );<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>输出为</p>
+<figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs applescript">sample <span class="hljs-built_in">text</span><br></code></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="http://en.cppreference.com/">http://en.cppreference.com</a> 上有更多的信息</p>
+<p>函数指针和成员函数指针不可用于const_cast</p>
+<p>const_cast可以使实际指代const对象的到非const类型的引用或指针，但是通过非const访问路径修改const对象则是未定义行为。</p>
+<p>更详细的例子</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span><br> <br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">type</span> &#123;</span><br>    <span class="hljs-built_in">type</span>() :<span class="hljs-built_in">i</span>(<span class="hljs-number">3</span>) &#123;&#125;<br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">m1</span><span class="hljs-params">(<span class="hljs-keyword">int</span> v)</span> <span class="hljs-keyword">const</span> </span>&#123;<br>        <span class="hljs-comment">// this-&gt;i = v;                 // 编译错误：这是指向 const 的指针</span><br>        <span class="hljs-keyword">const_cast</span>&lt;type*&gt;(<span class="hljs-keyword">this</span>)-&gt;i = v; <span class="hljs-comment">// 只要对象不是 const 就 OK</span><br>    &#125;<br>    <span class="hljs-keyword">int</span> i;<br>&#125;;<br> <br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-keyword">int</span> i = <span class="hljs-number">3</span>;                    <span class="hljs-comment">// i 不声明为 const</span><br>    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span>&amp; cref_i = i; <br>    <span class="hljs-keyword">const_cast</span>&lt;<span class="hljs-keyword">int</span>&amp;&gt;(cref_i) = <span class="hljs-number">4</span>; <span class="hljs-comment">// OK ：修改 i</span><br>    std::cout &lt;&lt; <span class="hljs-string">&quot;i = &quot;</span> &lt;&lt; i &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    type t; <span class="hljs-comment">// note, if this is const type t;, then t.m1(4); is UB</span><br>    t.<span class="hljs-built_in">m1</span>(<span class="hljs-number">4</span>);<br>    std::cout &lt;&lt; <span class="hljs-string">&quot;type::i = &quot;</span> &lt;&lt; t.i &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> j = <span class="hljs-number">3</span>; <span class="hljs-comment">// j 声明为 const</span><br>    <span class="hljs-keyword">int</span>* pj = <span class="hljs-keyword">const_cast</span>&lt;<span class="hljs-keyword">int</span>*&gt;(&amp;j);<br>    <span class="hljs-comment">// *pj = 4;         // 未定义行为！</span><br> <br>    <span class="hljs-built_in"><span class="hljs-keyword">void</span></span> (type::*mfp)(<span class="hljs-keyword">int</span>) <span class="hljs-keyword">const</span> = &amp;type::m1; <span class="hljs-comment">// 指向成员函数指针</span><br><span class="hljs-comment">//  const_cast&lt;void(type::*)(int)&gt;(mfp); // 编译错误： const_cast 对函数指针不起作用</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">i</span> = <span class="hljs-number">4</span><br><span class="hljs-attribute">type</span>::i = <span class="hljs-number">4</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="reinterpret-cast"><a href="#reinterpret-cast" class="headerlink" title="reinterpret_cast"></a>reinterpret_cast</h3><p>reinterpret_cast可以在任意类型指针进行转换，哪怕是不相关的类型。</p>
+<p>还可用于指针或引用与整型的相互转化，不单是int，还包括short、long等整数类型。</p>
+<p>原因在于reinterpret_cast是“simple binary copy”，cplusplus的原话是“The operation result is a simple binary copy of the value from one pointer to the other. All pointer conversions are allowed: neither the content pointed nor the pointer type itself is checked.”</p>
+<p>经过测试，整型与char *之间的转化也可以正常进行</p>
+<p>cppreference的例子</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;cstdint&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;cassert&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span><br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">f</span><span class="hljs-params">()</span> </span>&#123; <span class="hljs-keyword">return</span> <span class="hljs-number">42</span>; &#125;<br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-keyword">int</span> i = <span class="hljs-number">7</span>;<br> <br>    <span class="hljs-comment">// 指针到整数并转回</span><br>    <span class="hljs-keyword">uintptr_t</span> v1 = <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-keyword">uintptr_t</span>&gt;(&amp;i); <span class="hljs-comment">// static_cast 为错误</span><br>    std::cout &lt;&lt; <span class="hljs-string">&quot;The value of &amp;i is 0x&quot;</span> &lt;&lt; std::hex &lt;&lt; v1 &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br>    <span class="hljs-keyword">int</span>* p1 = <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-keyword">int</span>*&gt;(v1);<br>    <span class="hljs-built_in">assert</span>(p1 == &amp;i);<br> <br>    <span class="hljs-comment">// 到另一函数指针并转回</span><br>    <span class="hljs-built_in"><span class="hljs-keyword">void</span></span>(*fp1)() = <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-built_in"><span class="hljs-keyword">void</span></span>(*)()&gt;(f);<br>    <span class="hljs-comment">// fp1(); 未定义行为</span><br>    <span class="hljs-built_in"><span class="hljs-keyword">int</span></span>(*fp2)() = <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-built_in"><span class="hljs-keyword">int</span></span>(*)()&gt;(fp1);<br>    std::cout &lt;&lt; std::dec &lt;&lt; <span class="hljs-built_in">fp2</span>() &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>; <span class="hljs-comment">// 安全</span><br> <br>    <span class="hljs-comment">// 通过指针的类型别名使用</span><br>    <span class="hljs-keyword">char</span>* p2 = <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-keyword">char</span>*&gt;(&amp;i);<br>    <span class="hljs-keyword">if</span>(p2[<span class="hljs-number">0</span>] == <span class="hljs-string">&#x27;\x7&#x27;</span>)<br>        std::cout &lt;&lt; <span class="hljs-string">&quot;This system is little-endian\n&quot;</span>;<br>    <span class="hljs-keyword">else</span><br>        std::cout &lt;&lt; <span class="hljs-string">&quot;This system is big-endian\n&quot;</span>;<br> <br>    <span class="hljs-comment">// 通过引用的类型别名使用</span><br>    <span class="hljs-keyword">reinterpret_cast</span>&lt;<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span>&amp;&gt;(i) = <span class="hljs-number">42</span>;<br>    std::cout &lt;&lt; i &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> &amp;const_iref = i;<br>    <span class="hljs-comment">// int &amp;iref = reinterpret_cast&lt;int&amp;&gt;(const_iref); // 编译错误——不能去除 const</span><br>    <span class="hljs-comment">// 必须用 const_cast 代替： int &amp;iref = const_cast&lt;int&amp;&gt;(const_iref);</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">The</span> value of &amp;i is <span class="hljs-number">0</span>x<span class="hljs-number">7</span>fff<span class="hljs-number">352</span>c<span class="hljs-number">3580</span><br><span class="hljs-attribute">42</span><br><span class="hljs-attribute">This</span> system is little-endian<br><span class="hljs-attribute">42</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="static-cast"><a href="#static-cast" class="headerlink" title="static_cast"></a>static_cast</h3><p>static_cast可以在有联系的类型之间进行指针转换（between pointers to related classes），不但包括派生类转换基类，也包括基类转换派生类。</p>
+<p>static_cast还可以完成以下两种</p>
+<p>Convert from void* to any pointer type.可以有void *到任何类型</p>
+<p>Convert integers, floating-point values and enum types to enum types.由整数、浮点、枚举值到枚举值</p>
+<p>此外</p>
+<p>Explicitly call a single-argument constructor or a conversion operator. 调用单一参数的构造函数或转换的重载符号</p>
+<p>Convert to rvalue references. （由左值）转化成右值的引用</p>
+<p>Convert enum class values into integers or floating-point values. 枚举类转化为整数、浮点数</p>
+<p>Convert any type to void, evaluating and discarding the value. 任意类型到void，求值后舍弃该值</p>
+<p>示例</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;vector&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span><br> <br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">B</span> &#123;</span><br>    <span class="hljs-keyword">int</span> m = <span class="hljs-number">0</span>;<br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">hello</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> </span>&#123;<br>        std::cout &lt;&lt; <span class="hljs-string">&quot;Hello world, this is B!\n&quot;</span>;<br>    &#125;<br>&#125;;<br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">D</span> :</span> B &#123;<br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">hello</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span> </span>&#123;<br>        std::cout &lt;&lt; <span class="hljs-string">&quot;Hello world, this is D!\n&quot;</span>;<br>    &#125;<br>&#125;;<br> <br><span class="hljs-class"><span class="hljs-keyword">enum</span> <span class="hljs-keyword">class</span> <span class="hljs-title">E</span> &#123;</span> ONE = <span class="hljs-number">1</span>, TWO, THREE &#125;;<br><span class="hljs-class"><span class="hljs-keyword">enum</span> <span class="hljs-title">EU</span> &#123;</span> ONE = <span class="hljs-number">1</span>, TWO, THREE &#125;;<br> <br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-comment">// 1: 初始化转换</span><br>    <span class="hljs-keyword">int</span> n = <span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">int</span>&gt;(<span class="hljs-number">3.14</span>); <br>    std::cout &lt;&lt; <span class="hljs-string">&quot;n = &quot;</span> &lt;&lt; n &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br>    std::vector&lt;<span class="hljs-keyword">int</span>&gt; v = <span class="hljs-keyword">static_cast</span>&lt;std::vector&lt;<span class="hljs-keyword">int</span>&gt;&gt;(<span class="hljs-number">10</span>);<br>    std::cout &lt;&lt; <span class="hljs-string">&quot;v.size() = &quot;</span> &lt;&lt; v.<span class="hljs-built_in">size</span>() &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-comment">// 2: 静态向下转型</span><br>    D d;<br>    B&amp; br = d; <span class="hljs-comment">// 通过隐式转换向上转型</span><br>    br.<span class="hljs-built_in">hello</span>();<br>    D&amp; another_d = <span class="hljs-keyword">static_cast</span>&lt;D&amp;&gt;(br); <span class="hljs-comment">// 向下转型</span><br>    another_d.<span class="hljs-built_in">hello</span>();<br> <br>    <span class="hljs-comment">// 3: 左值到亡值</span><br>    std::vector&lt;<span class="hljs-keyword">int</span>&gt; v2 = <span class="hljs-keyword">static_cast</span>&lt;std::vector&lt;<span class="hljs-keyword">int</span>&gt;&amp;&amp;&gt;(v);<br>    std::cout &lt;&lt; <span class="hljs-string">&quot;after move, v.size() = &quot;</span> &lt;&lt; v.<span class="hljs-built_in">size</span>() &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-comment">// 4: 弃值表达式</span><br>    <span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">void</span>&gt;(v2.<span class="hljs-built_in">size</span>());<br> <br>    <span class="hljs-comment">// 5. 隐式转换的逆</span><br>    <span class="hljs-keyword">void</span>* nv = &amp;n;<br>    <span class="hljs-keyword">int</span>* ni = <span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">int</span>*&gt;(nv);<br>    std::cout &lt;&lt; <span class="hljs-string">&quot;*ni = &quot;</span> &lt;&lt; *ni &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-comment">// 6. 数组到指针后随向上转型</span><br>    D a[<span class="hljs-number">10</span>];<br>    B* dp = <span class="hljs-keyword">static_cast</span>&lt;B*&gt;(a);<br> <br>    <span class="hljs-comment">// 7. 有作用域枚举到 int 或 float</span><br>    E e = E::ONE;<br>    <span class="hljs-keyword">int</span> one = <span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">int</span>&gt;(e);<br>    std::cout &lt;&lt; one &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-comment">// 8. int 到枚举，枚举到另一枚举</span><br>    E e2 = <span class="hljs-keyword">static_cast</span>&lt;E&gt;(one);<br>    EU eu = <span class="hljs-keyword">static_cast</span>&lt;EU&gt;(e2);<br> <br>    <span class="hljs-comment">// 9. 指向成员指针向上转型</span><br>    <span class="hljs-keyword">int</span> D::*pm = &amp;D::m;<br>    std::cout &lt;&lt; br.*<span class="hljs-keyword">static_cast</span>&lt;<span class="hljs-keyword">int</span> B::*&gt;(pm) &lt;&lt; <span class="hljs-string">&#x27;\n&#x27;</span>;<br> <br>    <span class="hljs-comment">// 10. void* 到任何类型</span><br>    <span class="hljs-keyword">void</span>* voidp = &amp;e;<br>    std::vector&lt;<span class="hljs-keyword">int</span>&gt;* p = <span class="hljs-keyword">static_cast</span>&lt;std::vector&lt;<span class="hljs-keyword">int</span>&gt;*&gt;(voidp);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs kotlin">n = <span class="hljs-number">3</span><br>v.size() = <span class="hljs-number">10</span><br>Hello world, <span class="hljs-keyword">this</span> <span class="hljs-keyword">is</span> B!<br>Hello world, <span class="hljs-keyword">this</span> <span class="hljs-keyword">is</span> D!<br>after move, v.size() = <span class="hljs-number">0</span><br>*ni = <span class="hljs-number">3</span><br><span class="hljs-number">1</span><br><span class="hljs-number">0</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="dynamic-cast"><a href="#dynamic-cast" class="headerlink" title="dynamic_cast"></a>dynamic_cast</h3><p>dynamic_cast只能用于类或者void *的指针、引用转换，同时必须为多态以使用运行时检查的</p>
+<p>例子</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span><br> <br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">V</span> &#123;</span><br>    <span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">void</span> <span class="hljs-title">f</span><span class="hljs-params">()</span> </span>&#123;&#125;;  <span class="hljs-comment">// 必须为多态以使用运行时检查的 dynamic_cast</span><br>&#125;;<br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">A</span> :</span> <span class="hljs-keyword">virtual</span> V &#123;&#125;;<br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">B</span> :</span> <span class="hljs-keyword">virtual</span> V &#123;<br>  <span class="hljs-built_in">B</span>(V* v, A* a) &#123;<br>    <span class="hljs-comment">// 构造中转型（见后述 D 的构造函数中的调用）</span><br>    <span class="hljs-keyword">dynamic_cast</span>&lt;B*&gt;(v); <span class="hljs-comment">// 良好定义： v 有类型 V* ， B 的 V 基类，产生 B*</span><br>    <span class="hljs-keyword">dynamic_cast</span>&lt;B*&gt;(a); <span class="hljs-comment">// 未定义行为： a 有类型 A* ， A 非 B 的基类</span><br>  &#125;<br>&#125;;<br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">D</span> :</span> A, B &#123;<br>    <span class="hljs-built_in">D</span>() : <span class="hljs-built_in">B</span>((A*)<span class="hljs-keyword">this</span>, <span class="hljs-keyword">this</span>) &#123; &#125;<br>&#125;;<br> <br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Base</span> &#123;</span><br>    <span class="hljs-keyword">virtual</span> ~<span class="hljs-built_in">Base</span>() &#123;&#125;<br>&#125;;<br> <br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Derived</span>:</span> Base &#123;<br>    <span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">void</span> <span class="hljs-title">name</span><span class="hljs-params">()</span> </span>&#123;&#125;<br>&#125;;<br> <br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>    D d; <span class="hljs-comment">// 最终导出类</span><br>    A&amp; a = d; <span class="hljs-comment">// 向上转型，可以用 dynamic_cast ，但不必须</span><br>    D&amp; new_d = <span class="hljs-keyword">dynamic_cast</span>&lt;D&amp;&gt;(a); <span class="hljs-comment">// 向下转型</span><br>    B&amp; new_b = <span class="hljs-keyword">dynamic_cast</span>&lt;B&amp;&gt;(a); <span class="hljs-comment">// 侧向转型</span><br> <br> <br>    Base* b1 = <span class="hljs-keyword">new</span> Base;<br>    <span class="hljs-keyword">if</span>(Derived* d = <span class="hljs-keyword">dynamic_cast</span>&lt;Derived*&gt;(b1))<br>    &#123;<br>        std::cout &lt;&lt; <span class="hljs-string">&quot;downcast from b1 to d successful\n&quot;</span>;<br>        d-&gt;<span class="hljs-built_in">name</span>(); <span class="hljs-comment">// 调用安全</span><br>    &#125;<br> <br>    Base* b2 = <span class="hljs-keyword">new</span> Derived;<br>    <span class="hljs-keyword">if</span>(Derived* d = <span class="hljs-keyword">dynamic_cast</span>&lt;Derived*&gt;(b2))<br>    &#123;<br>        std::cout &lt;&lt; <span class="hljs-string">&quot;downcast from b2 to d successful\n&quot;</span>;<br>        d-&gt;<span class="hljs-built_in">name</span>(); <span class="hljs-comment">// 调用安全</span><br>    &#125;<br> <br>    <span class="hljs-keyword">delete</span> b1;<br>    <span class="hljs-keyword">delete</span> b2;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs applescript">downcast <span class="hljs-keyword">from</span> b2 <span class="hljs-keyword">to</span> d successful<br></code></pre></td></tr></table></figure>
+
+<p>dynamic_cast与static_cast在类转换上的不同在于，dynamic_cast会确保转化成功，在转化不成功时会设置为NULL，如上例中</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cpp">Derived* d = <span class="hljs-keyword">dynamic_cast</span>&lt;Derived*&gt;(b1)<br></code></pre></td></tr></table></figure>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/C/">C++</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/C/">C++</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2017/11/28/code-obf2/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">代码混淆——控制流扁平的开源实践和改进</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2017/06/07/code-obf1/">
+                        <span class="hidden-mobile">代码混淆——控制流扁平定义与算法</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

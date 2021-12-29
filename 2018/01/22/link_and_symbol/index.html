@@ -1,0 +1,488 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="链接链接的本质就是把多个不同编译单元（目标文件）相互整合到一起。整合的方式是通过地址的确定。 从单个编译单元的角度看，自己内部的声明可以按有无定义分为两类。对于有定义的一类，程序执行时自然可以定位地址完成相应操作，也就是地址是已知的。对于无定义的一类，由于是采用的外部的函数或者全局变量，地址是未知的，链接就是给未知的地址进行定位。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="链接与符号">
+<meta property="og:url" content="http://example.com/2018/01/22/link_and_symbol/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="链接链接的本质就是把多个不同编译单元（目标文件）相互整合到一起。整合的方式是通过地址的确定。 从单个编译单元的角度看，自己内部的声明可以按有无定义分为两类。对于有定义的一类，程序执行时自然可以定位地址完成相应操作，也就是地址是已知的。对于无定义的一类，由于是采用的外部的函数或者全局变量，地址是未知的，链接就是给未知的地址进行定位。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-01-22T06:49:04.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:54:36.880Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="编译原理">
+<meta property="article:tag" content="链接">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>链接与符号 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="链接与符号">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2018-01-22 14:49" pubdate>
+        2018年1月22日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.2k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      19 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">链接与符号</h1>
+            
+            <div class="markdown-body">
+              <h3 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h3><p>链接的本质就是把多个不同编译单元（目标文件）相互整合到一起。整合的方式是通过地址的确定。</p>
+<p>从单个编译单元的角度看，自己内部的声明可以按有无定义分为两类。对于有定义的一类，程序执行时自然可以定位地址完成相应操作，也就是地址是已知的。对于无定义的一类，由于是采用的外部的函数或者全局变量，地址是未知的，链接就是给未知的地址进行定位。<span id="more"></span></p>
+<p>在链接中统称函数和变量为符号，链接过程就是以符号为依据进行地址定位。</p>
+<p>__静态链接__：单个编译单元中的引用在未连接前地址设置为0，链接时依据重定位表进行重定位</p>
+<p>__动态链接__：将从动态共享对象中的引用标记为一个动态链接符号（链接时同样需要动态库参与，为了使用动态库的符号表确定哪个引用为动态链接符号）。执行时动态链接器与动态库都被映射到进程地址空间</p>
+<h3 id="LLVM-IR-链接符号"><a href="#LLVM-IR-链接符号" class="headerlink" title="LLVM IR 链接符号"></a>LLVM IR 链接符号</h3><p>具体的链接类型在IR阶段表现的更加彻底。这些都是通过源码的各种关键字（如：static，extern），声明定义方式（是否是引用）在IR中进行成显性的表示。</p>
+<p>下面内容来自llvm文档 <a target="_blank" rel="noopener" href="https://llvm.org/docs/LangRef.html#linkage-types">https://llvm.org/docs/LangRef.html#linkage-types</a></p>
+<p>所有全局变量和函数都有一种下列链接类型</p>
+<p><strong>private</strong></p>
+<p>只能被当前模块的对象直接访问。成为__private__的一个可能原因是为了避免重命名后的冲突。模块中的私有符号的所有引用都可以被更新，而这不会出现在任何目标文件的符号表中。</p>
+<p><strong>internal</strong></p>
+<p>与__private__相似，但是会作为一个local符号（比如ELF中STB_LOCAL）加入到目标文件符号表中。这个概念类似于C语言中static关键字。</p>
+<p><strong>available_externally</strong></p>
+<p>有__available_externally__关键字的全局变量将不会被输出到模块对应的目标文件中。从链接情况看，这相当于external声明。为了给内联和优化的发生提供外部模块全局变量的基础。__available_externally__的全局变量允许被随意丢弃、内联和优化，只可用于definitions，不可用于declarations。</p>
+<p><strong>linkonce</strong></p>
+<p>链接发生时将与其他同名全局变量合并。这个用于实现内联、模板或者其他必须在每个使用到它的编译单元都生成的代码，但是在之后可能被更明确的定义所覆盖。没有被引用的__linkonce__变量可以被丢弃。注意__linkonce__实际上不允许优化将函数主体内联到调用者中，因为它无法确定该定义是否是最终定义或者会不会被更明确的定义覆盖。使用__linkonce_odr__可使用内联或其他优化。</p>
+<p><strong>weak</strong></p>
+<p>__weak__拥有与__linkonce__相似的合并语义，不同的是没有引用的变量无法被丢弃。用于C源码中声明为”weak”的全局变量。</p>
+<p><strong>common</strong></p>
+<p>与__weak__类似，但在C中通常用于全局领域暂定的定义，比如”int x;”。拥有__common__的符号采用与__weak__同样的方式合并，并且没有引用也不会被删除。__common__可能没有一个明确的段，必须有0初始化，并且可能不会被记为’constant’。函数和别名可能不被记为__common__。</p>
+<p><strong>appending</strong></p>
+<p>仅被用于指向数组类型的全局指针。当两个__appending__一起链接的时候，这两个全局变量会被附加在一起。这是LLVM类型安全，等价于当.o文件被链接时让系统链接器在段中将同名附加到一起。不幸的是这与任何特性都不相符，所以仅能用于专门的LLVM解释器比如”llvm.global_ctors”</p>
+<p><strong>extern_weak</strong></p>
+<p>该链接的语义遵循ELF目标文件模型：符号在链接之前是weak，如果没有被链接，这个符号就变成了空，而不是一个未定义的引用。</p>
+<p><strong>linkonce_odr</strong>, <strong>weak_odr</strong></p>
+<p>一些语言允许不同的全局变量被合并，比如两个不同语义的函数。其他语言，比如C++，确保只有相同的全局变量被合并（one definition rule – ODR）。可以使用这两种linkage类型来说明只有相同才被合并。其他内容与不加odr的相同。</p>
+<p><strong>external</strong></p>
+<p>如果没有使用上述符号，说明全局可见，参与链接并可被用于解析外部符号。</p>
+<h3 id="关于强弱符号"><a href="#关于强弱符号" class="headerlink" title="关于强弱符号"></a>关于强弱符号</h3><p>默认函数和初始化的全局变量为强符号，未初始化以及明确声明属性为weak的全局变量为弱符号。</p>
+<p>强符号不允许多次定义；强符号覆盖弱符号；若没有强符号以占用空间最大的弱符号为准。</p>
+<p>当符号全为弱符号且可能出现的类型不同时，单个编译单元无法确定符号大小。</p>
+<p>common块的目的就是为了存放未确定最终大小的全局变量（可能被覆盖）。等最终链接完成还是会被存放到.BSS段</p>
+<p>直接导致需要COMMON机制的原因是编译器和链接器允许不同类型的弱符号存在，但最本质的原因还是链接器不支持符号类型，即无法判断各个符号的类型是否一致。（《程序员的自我修养》P112）</p>
+<p>BSS段存放（未初始化或者初始化值为0）的（全局变量和局部静态变量）。BSS段长度由段表保存，符号则由符号表保存，只有记录不占据磁盘空间，加载后占据内存空间</p>
+<p>有些编译器会将全局的未初始化变量存放在BSS，有些不存放只预留一个未定义的全局变量符号。</p>
+<p>当全局变量初始为0时，尽管为强符号，但是放在BSS段，不占据磁盘空间。</p>
+<p>全局变量未初始化，值为0，在common段，加载时确定大小，然后放入BSS段。</p>
+<p>note：当变量不在common段时，为强符号，也就是说弱符号等价于在common段。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Other/">Other</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/">编译原理</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E9%93%BE%E6%8E%A5/">链接</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2018/01/27/C-17-string-view/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">C++17 string_view</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2018/01/11/LLDB_and_Python/">
+                        <span class="hidden-mobile">LLDB与Python</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

@@ -1,0 +1,521 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="加入Python模块首先获取lldb的python模块路径 1lldb -P  在Python的site-packages路径下加入.pth文件，比如Extra.pth 将模块路径写入文件即可">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLDB与Python">
+<meta property="og:url" content="http://example.com/2018/01/11/LLDB_and_Python/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="加入Python模块首先获取lldb的python模块路径 1lldb -P  在Python的site-packages路径下加入.pth文件，比如Extra.pth 将模块路径写入文件即可">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-01-11T08:21:30.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:53:53.207Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="LLDB">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Debug">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>LLDB与Python - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="LLDB与Python">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2018-01-11 16:21" pubdate>
+        2018年1月11日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      6.5k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      54 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">LLDB与Python</h1>
+            
+            <div class="markdown-body">
+              <h3 id="加入Python模块"><a href="#加入Python模块" class="headerlink" title="加入Python模块"></a>加入Python模块</h3><p>首先获取lldb的python模块路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">lldb -P<br></code></pre></td></tr></table></figure>
+
+<p>在Python的site-packages路径下加入.pth文件，比如Extra.pth</p>
+<p>将模块路径写入文件即可<span id="more"></span></p>
+<h3 id="非command中运行"><a href="#非command中运行" class="headerlink" title="非command中运行"></a>非command中运行</h3><p>可以直接通过接口获得一个调试器的实例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs python">lldb.debugger = lldb.SBDebugger.Create()<br></code></pre></td></tr></table></figure>
+
+<p>lldb.py提供的基本接口有以下几种：</p>
+<p><strong>lldb.SBDebugger</strong> ： 代表调试器实例的类，拥有命令行解析和所有调试目标</p>
+<p><strong>lldb.SBTarget</strong> ： 代表当前调试目标</p>
+<p><strong>lldb.SBProcess</strong> ： 代表当前调试目标的执行进程，管理进程并且可访问全部内存空间</p>
+<p><strong>lldb.SBThread</strong> ： 代表当前选择的线程，并且管理全部栈帧。及时当前Target停止仍然可以被选择</p>
+<p><strong>lldb.SBFrame</strong> ： 代表某一栈帧，管理所属的局部变量和寄存器快照</p>
+<p>在 <a target="_blank" rel="noopener" href="https://lldb.llvm.org/python-reference.html">https://lldb.llvm.org/python-reference.html</a> 的最后有一个Python脚本使用lldb反汇编程序的例子</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs Python"><span class="hljs-comment">#!/usr/bin/python</span><br><br><span class="hljs-keyword">import</span> lldb<br><span class="hljs-keyword">import</span> os<br><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">disassemble_instructions</span>(<span class="hljs-params">insts</span>):</span><br>    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> insts:<br>        <span class="hljs-built_in">print</span> i<br><br><span class="hljs-comment"># Set the path to the executable to debug</span><br>exe = <span class="hljs-string">&quot;./a.out&quot;</span><br><br><span class="hljs-comment"># Create a new debugger instance</span><br>debugger = lldb.SBDebugger.Create()<br><br><span class="hljs-comment"># When we step or continue, don&#x27;t return from the function until the process </span><br><span class="hljs-comment"># stops. Otherwise we would have to handle the process events ourselves which, while doable is</span><br><span class="hljs-comment">#a little tricky.  We do this by setting the async mode to false.</span><br>debugger.SetAsync (<span class="hljs-literal">False</span>)<br><br><span class="hljs-comment"># Create a target from a file and arch</span><br><span class="hljs-built_in">print</span> <span class="hljs-string">&quot;Creating a target for &#x27;%s&#x27;&quot;</span> % exe<br><br>target = debugger.CreateTargetWithFileAndArch (exe, lldb.LLDB_ARCH_DEFAULT)<br><br><span class="hljs-keyword">if</span> target:<br>    <span class="hljs-comment"># If the target is valid set a breakpoint at main</span><br>    main_bp = target.BreakpointCreateByName (<span class="hljs-string">&quot;main&quot;</span>, target.GetExecutable().GetFilename());<br><br>    <span class="hljs-built_in">print</span> main_bp<br><br>    <span class="hljs-comment"># Launch the process. Since we specified synchronous mode, we won&#x27;t return</span><br>    <span class="hljs-comment"># from this function until we hit the breakpoint at main</span><br>    process = target.LaunchSimple (<span class="hljs-literal">None</span>, <span class="hljs-literal">None</span>, os.getcwd())<br>    <br>    <span class="hljs-comment"># Make sure the launch went ok</span><br>    <span class="hljs-keyword">if</span> process:<br>        <span class="hljs-comment"># Print some simple process info</span><br>        state = process.GetState ()<br>        <span class="hljs-built_in">print</span> process<br>        <span class="hljs-keyword">if</span> state == lldb.eStateStopped:<br>            <span class="hljs-comment"># Get the first thread</span><br>            thread = process.GetThreadAtIndex (<span class="hljs-number">0</span>)<br>            <span class="hljs-keyword">if</span> thread:<br>                <span class="hljs-comment"># Print some simple thread info</span><br>                <span class="hljs-built_in">print</span> thread<br>                <span class="hljs-comment"># Get the first frame</span><br>                frame = thread.GetFrameAtIndex (<span class="hljs-number">0</span>)<br>                <span class="hljs-keyword">if</span> frame:<br>                    <span class="hljs-comment"># Print some simple frame info</span><br>                    <span class="hljs-built_in">print</span> frame<br>                    function = frame.GetFunction()<br>                    <span class="hljs-comment"># See if we have debug info (a function)</span><br>                    <span class="hljs-keyword">if</span> function:<br>                        <span class="hljs-comment"># We do have a function, print some info for the function</span><br>                        <span class="hljs-built_in">print</span> function<br>                        <span class="hljs-comment"># Now get all instructions for this function and print them</span><br>                        insts = function.GetInstructions(target)<br>                        disassemble_instructions (insts)<br>                    <span class="hljs-keyword">else</span>:<br>                        <span class="hljs-comment"># See if we have a symbol in the symbol table for where we stopped</span><br>                        symbol = frame.GetSymbol();<br>                        <span class="hljs-keyword">if</span> symbol:<br>                            <span class="hljs-comment"># We do have a symbol, print some info for the symbol</span><br>                            <span class="hljs-built_in">print</span> symbol<br></code></pre></td></tr></table></figure>
+
+<p>可以看出这些主要类的相互调用关系</p>
+<h3 id="回调函数"><a href="#回调函数" class="headerlink" title="回调函数"></a>回调函数</h3><p>在lldb的command中的可以实现回调，比如当某个断点命中时自动执行函数</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs bash">(lldb) breakpoint <span class="hljs-built_in">set</span> --func-regex &lt;regular-expression&gt;<br>(lldb) breakpoint <span class="hljs-built_in">command</span> add -s python 1<br>Enter your Python <span class="hljs-built_in">command</span>(s). Type <span class="hljs-string">&#x27;DONE&#x27;</span> to end.<br>def <span class="hljs-keyword">function</span> (frame, bp_loc, internal_dict):<br>    <span class="hljs-string">&quot;&quot;</span><span class="hljs-string">&quot;frame: the lldb.SBFrame for the location at which you stopped</span><br><span class="hljs-string">       bp_loc: an lldb.SBBreakpointLocation for the breakpoint location information</span><br><span class="hljs-string">       internal_dict: an LLDB support object not to be used&quot;</span><span class="hljs-string">&quot;&quot;</span><br>    name = frame.GetFunctionName()<br>    <span class="hljs-built_in">print</span> <span class="hljs-string">&quot;function name: %s&quot;</span> % name<br>    <span class="hljs-built_in">return</span> False<br>    DONE<br></code></pre></td></tr></table></figure>
+
+<p>函数的返回值决定是否将控制权还给用户，返回False则不还给用户继续执行，返回其他包括None则暂停</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs bash">Process 2447 launched: <span class="hljs-string">&#x27;/Users/penguin/Test/a.out&#x27;</span> (x86_64)<br><span class="hljs-keyword">function</span> name: func100<br><span class="hljs-keyword">function</span> name: c100<br>9Process 2447 exited with status = 0 (0x00000000)<br></code></pre></td></tr></table></figure>
+
+<h3 id="CUSTOM-STEPPING-LOGIC"><a href="#CUSTOM-STEPPING-LOGIC" class="headerlink" title="CUSTOM STEPPING LOGIC"></a>CUSTOM STEPPING LOGIC</h3><p>这是一个比较深奥复杂的功能。lldb的step是由一个“thread plans”的栈驱动的。每当有step的动作出现，就有一个新的plan被压入栈中，完成后被弹出。</p>
+<p>当plan入栈后，lldb会通过“询问”该plan来决定一些功能，比如是否中断，“询问”的方式是调用约定的接口，常用的接口如下</p>
+<p><strong>should_step</strong>:</p>
+<p>栈底的plan是stepping控制器，意味着当进程暂停时该plan被询问是否自由的执行(running freely)，或者在当前线程单步(instruction-single-step)</p>
+<p> <strong>explains_stop</strong> :</p>
+<p>每个plan都会被询问，第一个声明这个stop的获得处理权利。例如在该地址有一个断点，如果脚本explains这个stop，并且should_stop返回false，这个断点将被跳过，因为处理权归脚本，而脚本不中断。这也是为什么step-over返回控制权的原因，因为它的explains一直返回false</p>
+<p><strong>should_stop</strong>:</p>
+<p>a) 确定是否完成工作。如果完成那么通过调用SetPlanComplete来指示</p>
+<p>b) 通过返回True或者False来确定是否将控制权交给用户</p>
+<p>c) 如果没有完成，将建立任何需要的机器在下次thread继续的时候，False情况下设置SetPlanComplete为False会exit当前thread</p>
+<p><strong>is_stale</strong>:</p>
+<p>轮询完成不管是否停下或者什么都没做，所有的plans将被访问is_stale，如果是他们将从栈中被弹出</p>
+<p>以文档的中 <a target="_blank" rel="noopener" href="http://llvm.org/svn/llvm-project/lldb/trunk/examples/python/scripted_step.py">http://llvm.org/svn/llvm-project/lldb/trunk/examples/python/scripted_step.py</a> 第一个SimpleStep为例，这里加入输出，来观察执行状态</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs Python"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SimpleStep</span>:</span><br><br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span>(<span class="hljs-params">self, thread_plan, <span class="hljs-built_in">dict</span></span>):</span><br>        self.thread_plan = thread_plan<br>        self.start_address = thread_plan.GetThread().GetFrameAtIndex(<span class="hljs-number">0</span>).GetPC()<br>        <span class="hljs-built_in">print</span> <span class="hljs-string">&quot;__init__ start_address:&quot;</span><br>        <span class="hljs-built_in">print</span> <span class="hljs-built_in">hex</span>(self.start_address)<br><br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">explains_stop</span>(<span class="hljs-params">self, event</span>):</span><br>        <span class="hljs-comment"># We are stepping, so if we stop for any other reason, it isn&#x27;t</span><br>        <span class="hljs-comment"># because of us.</span><br>        <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;explains_stop&#x27;</span><br>        <span class="hljs-keyword">if</span> self.thread_plan.GetThread().GetStopReason() == lldb.eStopReasonTrace:<br>            <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;true&#x27;</span><br>            <span class="hljs-keyword">return</span> <span class="hljs-literal">True</span><br>        <span class="hljs-keyword">else</span>:<br>            <span class="hljs-keyword">return</span> <span class="hljs-literal">False</span><br><br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">should_stop</span>(<span class="hljs-params">self, event</span>):</span><br>        <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;should_stop&#x27;</span><br>        cur_pc = self.thread_plan.GetThread().GetFrameAtIndex(<span class="hljs-number">0</span>).GetPC()<br>        <span class="hljs-built_in">print</span> <span class="hljs-built_in">hex</span>(cur_pc)<br>        <span class="hljs-keyword">if</span> cur_pc &lt; self.start_address <span class="hljs-keyword">or</span> cur_pc &gt;= self.start_address + <span class="hljs-number">20</span>:<br>            <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;true&#x27;</span><br>            self.thread_plan.SetPlanComplete(<span class="hljs-literal">True</span>)<br>            <span class="hljs-keyword">return</span> <span class="hljs-literal">True</span><br>        <span class="hljs-keyword">else</span>:<br>            <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;false&#x27;</span><br>            <span class="hljs-keyword">return</span> <span class="hljs-literal">False</span><br><br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">should_step</span>(<span class="hljs-params">self</span>):</span><br>        <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;should_step&#x27;</span><br>        <span class="hljs-keyword">return</span> <span class="hljs-literal">True</span><br></code></pre></td></tr></table></figure>
+
+<p>执行命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">(lldb) <span class="hljs-built_in">command</span> script import ~/script_step.py<br>(lldb) thread step-scripted -C script_step.SimpleStep<br></code></pre></td></tr></table></figure>
+
+<p>产生输出</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs bash">__init__ start_address:<br>0x100000f30<br>should_step<br>should_stop<br>0x100000f31<br><span class="hljs-literal">false</span><br>should_step<br>explains_stop<br><span class="hljs-literal">true</span><br>should_stop<br>0x100000f34<br><span class="hljs-literal">false</span><br>should_step<br>explains_stop<br><span class="hljs-literal">true</span><br>should_stop<br>0x100000f38<br><span class="hljs-literal">false</span><br>should_step<br>explains_stop<br><span class="hljs-literal">true</span><br>should_stop<br>0x100000f3d<br><span class="hljs-literal">false</span><br>should_step<br>explains_stop<br><span class="hljs-literal">true</span><br>should_stop<br>0x100000f44<br><span class="hljs-literal">true</span><br></code></pre></td></tr></table></figure>
+
+<p>__should_step__返回True，所以之后都是单步执行（可以修改为False试试，程序跑飞了）</p>
+<p>然后__explains_stop__宣布占据这个单步执行导致的中断</p>
+<p>__should_stop__根据条件决定是否将程序的控制权交给user，直观的感受就是程序停下来了</p>
+<h3 id="增加命令"><a href="#增加命令" class="headerlink" title="增加命令"></a>增加命令</h3><p>Python函数可以增加新的LLDB命令到命令解析器中，函数形式如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs Python"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">command_function</span>(<span class="hljs-params">debugger, command, result, internal_dict</span>):</span><br>          <span class="hljs-string">&quot;&quot;&quot;This command takes a lot of options and does many fancy things&quot;&quot;&quot;</span>    <br>          <span class="hljs-comment"># Your code goes here</span><br></code></pre></td></tr></table></figure>
+
+<p>第一个参数是debugger实例，第二个参数是命令参数，</p>
+<p>第三个参数为__lldb.SBCommandReturnObjec__类型，包含命令执行结果信息</p>
+<p>最后是嵌入的脚本的集合</p>
+<p>也可以使用Python类实现命令添加</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommandObjectType</span>:</span><br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span>(<span class="hljs-params">self, debugger, session_dict</span>):</span><br>        this call should initialize the command <span class="hljs-keyword">with</span> respect to the command interpreter <span class="hljs-keyword">for</span> the passed-<span class="hljs-keyword">in</span> debugger <br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__call__</span>(<span class="hljs-params">self, debugger, command, exe_ctx, result</span>):</span> <br>        this <span class="hljs-keyword">is</span> the actual bulk of the command, akin to Python command functions<br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">get_short_help</span>(<span class="hljs-params">self</span>):</span> <br>        this call should <span class="hljs-keyword">return</span> the short <span class="hljs-built_in">help</span> text <span class="hljs-keyword">for</span> this command[<span class="hljs-number">1</span>]<br>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">get_long_help</span>(<span class="hljs-params">self</span>):</span> <br>        this call should <span class="hljs-keyword">return</span> the long <span class="hljs-built_in">help</span> text <span class="hljs-keyword">for</span> this command[<span class="hljs-number">1</span>]<br></code></pre></td></tr></table></figure>
+
+<p>对于一个Python脚本，可以通过定义</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__lldb_init_module</span>(<span class="hljs-params">debugger, internal_dict</span>):</span><br>    <span class="hljs-comment"># Command Initialization code goes here</span><br></code></pre></td></tr></table></figure>
+
+<p>该函数在import时执行初始化</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">ls</span>(<span class="hljs-params">debugger, command, result, internal_dict</span>):</span><br>    ret = commands.getoutput(<span class="hljs-string">&#x27;/bin/ls %s&#x27;</span> % command)<br>    <span class="hljs-built_in">print</span> &gt;&gt;result, (ret)<br><br><span class="hljs-comment"># And the initialization code to add your commands </span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__lldb_init_module</span>(<span class="hljs-params">debugger, internal_dict</span>):</span><br>    debugger.HandleCommand(<span class="hljs-string">&#x27;command script add -f script_step.ls ls&#x27;</span>)<br>    <span class="hljs-built_in">print</span> <span class="hljs-string">&#x27;The &quot;ls&quot; python command has been installed and is ready for use.&#x27;</span><br></code></pre></td></tr></table></figure>
+
+<p>如上述脚本，执行命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">(lldb) <span class="hljs-built_in">command</span> script import ~/script_step.py<br></code></pre></td></tr></table></figure>
+
+<p>就可以直接在LLDB中使用命令ls</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs bash">(lldb) ls /<br>Applications<br>Library<br>Network<br>System<br>...<br></code></pre></td></tr></table></figure>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Other/">Other</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/LLDB/">LLDB</a>
+                    
+                      <a class="hover-with-bg" href="/tags/Python/">Python</a>
+                    
+                      <a class="hover-with-bg" href="/tags/Debug/">Debug</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2018/01/22/link_and_symbol/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">链接与符号</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2017/12/21/replace-function-name/">
+                        <span class="hidden-mobile">replace_function_name</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

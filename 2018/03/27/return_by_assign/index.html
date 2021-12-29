@@ -1,0 +1,480 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="今天翻看王垠的Blog，有一篇引起了我的注意 Yoda 表示法错在哪里 。 其实这是一个古老的问题，用王垠的话讲这是一个典型的“先辈的罪”（Sins of our Forefathers）。我更愿意叫它“历史遗留问题”。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="赋值语句返回的原罪">
+<meta property="og:url" content="http://example.com/2018/03/27/return_by_assign/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="今天翻看王垠的Blog，有一篇引起了我的注意 Yoda 表示法错在哪里 。 其实这是一个古老的问题，用王垠的话讲这是一个典型的“先辈的罪”（Sins of our Forefathers）。我更愿意叫它“历史遗留问题”。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-03-26T16:17:49.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:54:54.427Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="C++">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>赋值语句返回的原罪 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="赋值语句返回的原罪">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2018-03-27 00:17" pubdate>
+        2018年3月27日 凌晨
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.6k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      39 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">赋值语句返回的原罪</h1>
+            
+            <div class="markdown-body">
+              <p>今天翻看王垠的Blog，有一篇引起了我的注意 <a target="_blank" rel="noopener" href="http://www.yinwang.org/blog-cn/2013/04/16/yoda-notation">Yoda 表示法错在哪里</a> 。</p>
+<p>其实这是一个古老的问题，用王垠的话讲这是一个典型的“先辈的罪”（Sins of our Forefathers）。我更愿意叫它“历史遗留问题”。<span id="more"></span></p>
+<p>这个问题世界上任何一个写C++或者C的人都应该遇到过，当我需要使用“==”进行判断的时候少写了一个“=”，然后开始了漫长的、痛苦的Debug之路。老实说，我曾经有过至少5次这样的错误，最深刻的一回我可能排查了2个小时才搞定。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (a = <span class="hljs-number">1</span>) &#123; <span class="hljs-comment">// WTF</span><br>    ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>后来，痛定思痛，我成为了Yoda写法的忠实践行者</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (<span class="hljs-number">1</span> == a) &#123; <span class="hljs-comment">// looks like good</span><br>    ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>而当我工作之后，甚至很多情况下会故意写出这样的代码</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (DeclStmt *DS = dyn_cast_or_not&lt;DeclStmt&gt;(S)) &#123;<br>    ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>不得不说这种写法非常诱惑，一行代码解决了两行代码的问题</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (isa&lt;DeclStmt&gt;(S)) &#123;<br>    DeclStmt *DS = dyn_cast&lt;DeclStmt&gt;(S);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>但是同样不得不说的是，这样的写法确实从逻辑上讲是有问题的。这个问题的根源在于——<strong>为什么一条复制语句会拥有返回值？</strong></p>
+<p>对应的反例，可以看看Rust中的赋值语句</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs Rust"><span class="hljs-keyword">let</span> a = <span class="hljs-number">1</span>;<br></code></pre></td></tr></table></figure>
+
+<p>程序的源代码是对内存状态的改变，赋值行为是一个具有特殊意义的行为，直接决定了程序的正确性。进行赋值操作的源代码，它的任何除赋值以外的效果都应该作为副作用被规避，以此来保证程序的正确性。</p>
+<p>Rust中的赋值必然是一条语句，无法作为一个表达式，如此保证赋值行为的正确执行。但是很明显，C++中的赋值行为可以被定义为一个返回值有效的表达式。</p>
+<p>可以从C++的AST中更加明显的看到这一点</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">int</span> a = <span class="hljs-number">0</span>;<br><span class="hljs-keyword">int</span> b = <span class="hljs-number">0</span>;<br><span class="hljs-keyword">if</span> ( a = <span class="hljs-number">1</span> ) &#123;<br>    b = <span class="hljs-number">1</span>;<br>&#125;<br><span class="hljs-keyword">if</span> ( a == <span class="hljs-number">0</span> ) &#123;<br>    b = <span class="hljs-number">2</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>对于这样一段代码，clang生成的AST是这样的</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">|-IfStmt <span class="hljs-number">0x9c0ba98</span> &lt;<span class="hljs-type">line</span>:<span class="hljs-number">5</span>:<span class="hljs-number">5</span>, <span class="hljs-type">line</span>:<span class="hljs-number">7</span>:<span class="hljs-number">5</span>&gt;                                       <br>| |-&lt;<span class="hljs-symbol">&lt;&lt;NULL&gt;&gt;</span>&gt;                                                                <br>| |-&lt;<span class="hljs-symbol">&lt;&lt;NULL&gt;&gt;</span>&gt;                                                                <br>| |-ImplicitCastExpr <span class="hljs-number">0x9c0ba20</span> &lt;<span class="hljs-type">line</span>:<span class="hljs-number">5</span>:<span class="hljs-number">10</span>, col:<span class="hljs-number">14</span>&gt; <span class="hljs-string">&#x27;_Bool&#x27;</span> &lt;IntegralToBoolean&gt;<br>| | `-ImplicitCastExpr <span class="hljs-number">0x9c0ba10</span> &lt;col:<span class="hljs-number">10</span>, col:<span class="hljs-number">14</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> &lt;LValueToRValue&gt;  <br>| |   `-BinaryOperator <span class="hljs-number">0x9c0b9f8</span> &lt;col:<span class="hljs-number">10</span>, col:<span class="hljs-number">14</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue <span class="hljs-string">&#x27;=&#x27;</span>            <br>| |     |-DeclRefExpr <span class="hljs-number">0x9c0b9c0</span> &lt;col:<span class="hljs-number">10</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue Var <span class="hljs-number">0x9c0b8e0</span> <span class="hljs-string">&#x27;a&#x27;</span> <span class="hljs-string">&#x27;int&#x27;</span> <br>| |     `-IntegerLiteral <span class="hljs-number">0x9c0b9d8</span> &lt;col:<span class="hljs-number">14</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> <span class="hljs-number">1</span>                           <br>| |-CompoundStmt <span class="hljs-number">0x9c0ba80</span> &lt;col:<span class="hljs-number">18</span>, <span class="hljs-type">line</span>:<span class="hljs-number">7</span>:<span class="hljs-number">5</span>&gt;                                 <br>| | `-BinaryOperator <span class="hljs-number">0x9c0ba68</span> &lt;<span class="hljs-type">line</span>:<span class="hljs-number">6</span>:<span class="hljs-number">9</span>, col:<span class="hljs-number">13</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue <span class="hljs-string">&#x27;=&#x27;</span>            <br>| |   |-DeclRefExpr <span class="hljs-number">0x9c0ba30</span> &lt;col:<span class="hljs-number">9</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue Var <span class="hljs-number">0x9c0b958</span> <span class="hljs-string">&#x27;b&#x27;</span> <span class="hljs-string">&#x27;int&#x27;</span>    <br>| |   `-IntegerLiteral <span class="hljs-number">0x9c0ba48</span> &lt;col:<span class="hljs-number">13</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> <span class="hljs-number">1</span>                             <br>| `-&lt;<span class="hljs-symbol">&lt;&lt;NULL&gt;&gt;</span>&gt;                                                                <br>|-IfStmt <span class="hljs-number">0x9c0bb80</span> &lt;<span class="hljs-type">line</span>:<span class="hljs-number">8</span>:<span class="hljs-number">5</span>, <span class="hljs-type">line</span>:<span class="hljs-number">10</span>:<span class="hljs-number">5</span>&gt;                                      <br>| |-&lt;<span class="hljs-symbol">&lt;&lt;NULL&gt;&gt;</span>&gt;                                                                <br>| |-&lt;<span class="hljs-symbol">&lt;&lt;NULL&gt;&gt;</span>&gt;                                                                <br>| |-BinaryOperator <span class="hljs-number">0x9c0bb00</span> &lt;<span class="hljs-type">line</span>:<span class="hljs-number">8</span>:<span class="hljs-number">10</span>, col:<span class="hljs-number">15</span>&gt; <span class="hljs-string">&#x27;_Bool&#x27;</span> <span class="hljs-string">&#x27;==&#x27;</span>                 <br>| | |-ImplicitCastExpr <span class="hljs-number">0x9c0baf0</span> &lt;col:<span class="hljs-number">10</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> &lt;LValueToRValue&gt;              <br>| | | `-DeclRefExpr <span class="hljs-number">0x9c0bab8</span> &lt;col:<span class="hljs-number">10</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue Var <span class="hljs-number">0x9c0b8e0</span> <span class="hljs-string">&#x27;a&#x27;</span> <span class="hljs-string">&#x27;int&#x27;</span>   <br>| | `-IntegerLiteral <span class="hljs-number">0x9c0bad0</span> &lt;col:<span class="hljs-number">15</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> <span class="hljs-number">0</span>                               <br>| |-CompoundStmt <span class="hljs-number">0x9c0bb68</span> &lt;col:<span class="hljs-number">19</span>, <span class="hljs-type">line</span>:<span class="hljs-number">10</span>:<span class="hljs-number">5</span>&gt;                                <br>| | `-BinaryOperator <span class="hljs-number">0x9c0bb50</span> &lt;<span class="hljs-type">line</span>:<span class="hljs-number">9</span>:<span class="hljs-number">9</span>, col:<span class="hljs-number">13</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue <span class="hljs-string">&#x27;=&#x27;</span>            <br>| |   |-DeclRefExpr <span class="hljs-number">0x9c0bb18</span> &lt;col:<span class="hljs-number">9</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> lvalue Var <span class="hljs-number">0x9c0b958</span> <span class="hljs-string">&#x27;b&#x27;</span> <span class="hljs-string">&#x27;int&#x27;</span>    <br>| |   `-IntegerLiteral <span class="hljs-number">0x9c0bb30</span> &lt;col:<span class="hljs-number">13</span>&gt; <span class="hljs-string">&#x27;int&#x27;</span> <span class="hljs-number">2</span>                             <br>| `-&lt;<span class="hljs-symbol">&lt;&lt;NULL&gt;&gt;</span>&gt;                                                                <br></code></pre></td></tr></table></figure>
+
+<p>对比一下区别，“=”和“==”都是最为一个BinaryOperator的OpCode存在的。也就是说C++认为赋值行为和加减乘除相等这些都是一样的作为二元运算符存在的。事实上不单单是“==”，从OperationKinds.def中可以看到</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><code class="hljs stylus"><span class="hljs-comment">// [C++ 5.5] Pointer-to-member operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(PtrMemD, <span class="hljs-string">&quot;.*&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(PtrMemI, <span class="hljs-string">&quot;-&gt;*&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.5] Multiplicative operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Mul, <span class="hljs-string">&quot;*&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Div, <span class="hljs-string">&quot;/&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Rem, <span class="hljs-string">&quot;%&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.6] Additive operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Add, <span class="hljs-string">&quot;+&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Sub, <span class="hljs-string">&quot;-&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.7] Bitwise shift operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Shl, <span class="hljs-string">&quot;&lt;&lt;&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Shr, <span class="hljs-string">&quot;&gt;&gt;&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.8] Relational operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(LT, <span class="hljs-string">&quot;&lt;&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(GT, <span class="hljs-string">&quot;&gt;&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(LE, <span class="hljs-string">&quot;&lt;=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(GE, <span class="hljs-string">&quot;&gt;=&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.9] Equality operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(EQ, <span class="hljs-string">&quot;==&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(NE, <span class="hljs-string">&quot;!=&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.10] Bitwise AND operator.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(And, <span class="hljs-string">&quot;&amp;&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.11] Bitwise XOR operator.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Xor, <span class="hljs-string">&quot;^&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.12] Bitwise OR operator.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Or, <span class="hljs-string">&quot;|&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.13] Logical AND operator.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(LAnd, <span class="hljs-string">&quot;&amp;&amp;&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.14] Logical OR operator.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(LOr, <span class="hljs-string">&quot;||&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.16] Assignment operators.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Assign, <span class="hljs-string">&quot;=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(MulAssign, <span class="hljs-string">&quot;*=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(DivAssign, <span class="hljs-string">&quot;/=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(RemAssign, <span class="hljs-string">&quot;%=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(AddAssign, <span class="hljs-string">&quot;+=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(SubAssign, <span class="hljs-string">&quot;-=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(ShlAssign, <span class="hljs-string">&quot;&lt;&lt;=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(ShrAssign, <span class="hljs-string">&quot;&gt;&gt;=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(AndAssign, <span class="hljs-string">&quot;&amp;=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(XorAssign, <span class="hljs-string">&quot;^=&quot;</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(OrAssign, <span class="hljs-string">&quot;|=&quot;</span>)</span></span><br><span class="hljs-comment">// [C99 6.5.17] Comma operator.</span><br><span class="hljs-function"><span class="hljs-title">BINARY_OPERATION</span><span class="hljs-params">(Comma, <span class="hljs-string">&quot;,&quot;</span>)</span></span><br></code></pre></td></tr></table></figure>
+<p>“*=”这些类似的符号也是类似的，考虑到“-”、“+”和“=”的位置关系，历史上应该也是有人在需要“==”时写出了这样的代码</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-keyword">if</span> (a -= <span class="hljs-number">1</span>) &#123;<br>    ...<br>&#125;<br><span class="hljs-keyword">if</span> (a += <span class="hljs-number">1</span>) &#123;<br>    ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>23333….</p>
+<p>错误地没有将赋值行为与其他二元操作符区分开来是C++此类错误的元凶，不过我估计C++有可能是兼容了C（代码直接拿过来用了），至于C为什么会这样做，可能是因为那时的程序员水平都比较高，保证能写出正确的代码吧（很符合C++的设计哲学嘛）。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Other/">Other</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/C/">C++</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2018/04/14/LLVM-Pass-add-process/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">LLVM Pass从添加到执行的过程</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2018/01/27/C-17-string-view/">
+                        <span class="hidden-mobile">C++17 string_view</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

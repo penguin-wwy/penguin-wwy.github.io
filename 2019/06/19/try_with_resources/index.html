@@ -1,0 +1,498 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="谁来背锅try-with-resource是Java 1.7中新增的，来打开资源，而无需手动关闭语法糖。官方介绍如下：  The try-with-resources statement is a try statement that declares one or more resources.A resource is an object that must be closed after t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于try-with-resources不知道的事">
+<meta property="og:url" content="http://example.com/2019/06/19/try_with_resources/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="谁来背锅try-with-resource是Java 1.7中新增的，来打开资源，而无需手动关闭语法糖。官方介绍如下：  The try-with-resources statement is a try statement that declares one or more resources.A resource is an object that must be closed after t">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-06-18T17:17:28.000Z">
+<meta property="article:modified_time" content="2021-12-15T17:55:16.073Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="bytecode">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>关于try-with-resources不知道的事 - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="关于try-with-resources不知道的事">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2019-06-19 01:17" pubdate>
+        2019年6月19日 凌晨
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      11k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      91 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">关于try-with-resources不知道的事</h1>
+            
+            <div class="markdown-body">
+              <h3 id="谁来背锅"><a href="#谁来背锅" class="headerlink" title="谁来背锅"></a>谁来背锅</h3><p>try-with-resource是Java 1.7中新增的，来打开资源，而无需手动关闭语法糖。官方介绍如下：</p>
+<blockquote>
+<p>The try-with-resources statement is a try statement that declares one or more resources.<br>A resource is an object that must be closed after the program is finished with it.<br>The try-with-resources statement ensures that each resource is closed at the end of the statement.<br>Any object that implements java.lang.AutoCloseable, which includes all objects which implement java.io.Closeable, can be used as a resource.</p>
+</blockquote>
+<p>还十分贴心的贴上了说明代码<span id="more"></span></p>
+<blockquote>
+<p>The following example reads the first line from a file. It uses an instance of BufferedReader to read data from the file. BufferedReader is a resource that must be closed after the program is finished with it:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java">&gt;<span class="hljs-function"><span class="hljs-keyword">static</span> String <span class="hljs-title">readFirstLineFromFile</span><span class="hljs-params">(String path)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br><span class="hljs-keyword">try</span> (BufferedReader br = <span class="hljs-keyword">new</span> BufferedReader(<span class="hljs-keyword">new</span> FileReader(path))) &#123;<br>	<span class="hljs-keyword">return</span> br.readLine();<br>&#125;<br>&gt;&#125;<br></code></pre></td></tr></table></figure>
+
+<p>In this example, the resource declared in the try-with-resources statement is a BufferedReader. The declaration statement appears within parentheses immediately after the try keyword. The class BufferedReader, in Java SE 7 and later, implements the interface java.lang.AutoCloseable. Because the BufferedReader instance is declared in a try-with-resource statement, it will be closed regardless of whether the try statement completes normally or abruptly (as a result of the method BufferedReader.readLine throwing an IOException).</p>
+<p>Prior to Java SE 7, you can use a finally block to ensure that a resource is closed regardless of whether the try statement completes normally or abruptly. The following example uses a finally block instead of a try-with-resources statement:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java">&gt;<span class="hljs-function"><span class="hljs-keyword">static</span> String <span class="hljs-title">readFirstLineFromFileWithFinallyBlock</span><span class="hljs-params">(String path)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br>BufferedReader br = <span class="hljs-keyword">new</span> BufferedReader(<span class="hljs-keyword">new</span> FileReader(path));<br><span class="hljs-keyword">try</span> &#123;<br>	<span class="hljs-keyword">return</span> br.readLine();<br>&#125; <span class="hljs-keyword">finally</span> &#123;<br>	<span class="hljs-keyword">if</span> (br != <span class="hljs-keyword">null</span>) br.close();<br>&#125;<br>&gt;&#125;<br></code></pre></td></tr></table></figure>
+</blockquote>
+<p>尤其是最后那句</p>
+<blockquote>
+<p>The following example uses a finally block instead of a try-with-resources statement</p>
+</blockquote>
+<p>让我误以为这两条代码是完全等价的。</p>
+<h3 id="由soot而来的疑惑"><a href="#由soot而来的疑惑" class="headerlink" title="由soot而来的疑惑"></a>由soot而来的疑惑</h3><p>一个简单的例子</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> com.google.common.flogger.FluentLogger;<br><br><span class="hljs-keyword">import</span> java.io.File;<br><span class="hljs-keyword">import</span> java.io.FileInputStream;<br><span class="hljs-keyword">import</span> java.io.FileOutputStream;<br><span class="hljs-keyword">import</span> java.io.IOException;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FinalTest</span> </span>&#123;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> FluentLogger logger = FluentLogger.forEnclosingClass();<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">finalTest</span><span class="hljs-params">(String path, String[] contant)</span> </span>&#123;<br>        File outFile = <span class="hljs-keyword">new</span> File(path);<br>        <span class="hljs-keyword">try</span> (FileOutputStream os = <span class="hljs-keyword">new</span> FileOutputStream(outFile)) &#123;<br>            <span class="hljs-keyword">for</span> (String s : contant) &#123;<br>                os.write(s.getBytes());<br>            &#125;<br>        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>            logger.atSevere().withCause(e).log();<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            System.out.println(<span class="hljs-string">&quot;Out file: &quot;</span> + path);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>按照文档中的例子，close函数等价于在finally中执行，也就是说在exception block执行完成之后</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java">FileOutputStream os = <span class="hljs-keyword">new</span> FileOutputStream(outFile)<br><span class="hljs-keyword">try</span> &#123;<br>	...<br>&#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>	...<br>&#125; <span class="hljs-keyword">finally</span> &#123;<br>    os.close(); <span class="hljs-comment">// 这里执行</span><br>    System.out.println(<span class="hljs-string">&quot;Out file: &quot;</span> + path);<br>    os.close(); <span class="hljs-comment">// 或者这里执行</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>然而它生成的jimple</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><code class="hljs jimple">public static void finalTest(java.lang.String, java.lang.String[])<br>&#123;<br>    ...<br>    ...<br><br> label08:<br>    if $r8 == null goto label13;<br><br>    if r32 == null goto label12;<br><br> label09:<br>    virtualinvoke $r8.&lt;java.io.FileOutputStream: void close()&gt;();<br><br> label10:<br>    goto label13;<br><br> label11:<br>    $r23 := @caughtexception;<br><br>    virtualinvoke r32.&lt;java.lang.Throwable: void addSuppressed(java.lang.Throwable)&gt;($r23);<br><br>    goto label13;<br><br> label12:<br>    virtualinvoke $r8.&lt;java.io.FileOutputStream: void close()&gt;();<br><br> label13:<br>    throw $r21;<br><br>...<br>    ...<br><br> label15: // exception label<br>    $r10 := @caughtexception;<br><br>    $r11 = &lt;com.sbrella.test.FinalTest: com.google.common.flogger.FluentLogger logger&gt;;<br><br>    $r12 = virtualinvoke $r11.&lt;com.google.common.flogger.FluentLogger: com.google.common.flogger.LoggingApi atSevere()&gt;();<br><br>    $r13 = (com.google.common.flogger.FluentLogger$Api) $r12;<br><br>    $r14 = interfaceinvoke $r13.&lt;com.google.common.flogger.FluentLogger$Api: com.google.common.flogger.LoggingApi withCause(java.lang.Throwable)&gt;($r10);<br><br>    $r15 = (com.google.common.flogger.FluentLogger$Api) $r14;<br><br>    interfaceinvoke $r15.&lt;com.google.common.flogger.FluentLogger$Api: void log()&gt;();<br><br> label16:<br>    $r17 = &lt;java.lang.System: java.io.PrintStream out&gt;;<br><br>    $r16 = new java.lang.StringBuilder;<br><br>    specialinvoke $r16.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();<br><br>    $r18 = virtualinvoke $r16.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;Out file: &quot;);<br><br>    $r19 = virtualinvoke $r18.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(r0);<br><br>    $r20 = virtualinvoke $r19.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();<br><br>    virtualinvoke $r17.&lt;java.io.PrintStream: void println(java.lang.String)&gt;($r20);<br><br>    goto label19;<br><br> label17:<br>    $r25 := @caughtexception;<br><br> label18:<br>    $r27 = &lt;java.lang.System: java.io.PrintStream out&gt;;<br><br>    $r26 = new java.lang.StringBuilder;<br><br>    specialinvoke $r26.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();<br><br>    $r28 = virtualinvoke $r26.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;Out file: &quot;);<br><br>    $r29 = virtualinvoke $r28.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(r0);<br><br>    $r30 = virtualinvoke $r29.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();<br><br>    virtualinvoke $r27.&lt;java.io.PrintStream: void println(java.lang.String)&gt;($r30);<br><br>    throw $r25;<br><br> label19:<br>    return;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>只有一个exception label，且没有任何跳转。也就是说在exception执行完之后直接执行finally中的println，然后便退出了。</p>
+<p>那close呢，在exception之前就执行了。</p>
+<h3 id="Bytecode的答案"><a href="#Bytecode的答案" class="headerlink" title="Bytecode的答案"></a>Bytecode的答案</h3><p>要知道真正的执行顺序自然是到class文件中寻找答案，直接看bytecode</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-string">public</span> <span class="hljs-string">static</span> <span class="hljs-string">void</span> <span class="hljs-string">finalTest(java.lang.String,</span> <span class="hljs-string">java.lang.String[]);</span><br>  <span class="hljs-attr">descriptor:</span> <span class="hljs-string">(Ljava/lang/String;[Ljava/lang/String;)V</span><br>  <span class="hljs-attr">flags:</span> <span class="hljs-string">ACC_PUBLIC,</span> <span class="hljs-string">ACC_STATIC</span><br>  <span class="hljs-attr">Code:</span><br>    <span class="hljs-string">stack=3,</span> <span class="hljs-string">locals=12,</span> <span class="hljs-string">args_size=2</span><br><span class="hljs-string">...</span><br>      <span class="hljs-string">...</span><br>      <span class="hljs-attr">49:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#9                  // Method java/lang/String.getBytes:()[B</span><br>      <span class="hljs-attr">52:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#10                 // write 函数触发异常 java/io/FileOutputStream.write:([B)V</span><br>      <span class="hljs-attr">55:</span> <span class="hljs-string">iinc</span>          <span class="hljs-number">7</span><span class="hljs-string">,</span> <span class="hljs-number">1</span><br>      <span class="hljs-attr">58:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">32</span><br>      <span class="hljs-attr">61:</span> <span class="hljs-string">aload_3</span><br>      <span class="hljs-attr">62:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">142</span><br>      <span class="hljs-attr">65:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span><br>      <span class="hljs-attr">67:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">89</span><br>      <span class="hljs-attr">70:</span> <span class="hljs-string">aload_3</span><br>      <span class="hljs-attr">71:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>      <span class="hljs-attr">74:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">142</span><br>      <span class="hljs-attr">77:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">5</span><br>      <span class="hljs-attr">79:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span><br>      <span class="hljs-attr">81:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">5</span><br>      <span class="hljs-attr">83:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#13                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V</span><br>      <span class="hljs-attr">86:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">142</span><br>      <span class="hljs-attr">89:</span> <span class="hljs-string">aload_3</span><br>      <span class="hljs-attr">90:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>      <span class="hljs-attr">93:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">142</span><br>      <span class="hljs-attr">96:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">5</span>		      <span class="hljs-string">//</span> <span class="hljs-string">根据exception</span> <span class="hljs-string">table，write的异常跳转到这里</span><br>      <span class="hljs-attr">98:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">5</span><br>     <span class="hljs-attr">100:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">4</span><br>     <span class="hljs-attr">102:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">5</span><br>     <span class="hljs-attr">104:</span> <span class="hljs-string">athrow</span>			      <span class="hljs-string">//</span> <span class="hljs-string">throw</span> <span class="hljs-string">一个异常在并跳转到105</span><br>     <span class="hljs-attr">105:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">9</span><br>     <span class="hljs-attr">107:</span> <span class="hljs-string">aload_3</span>      		      <span class="hljs-string">//</span> <span class="hljs-string">取出FileOutputStream</span><br>     <span class="hljs-attr">108:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">139</span><br>     <span class="hljs-attr">111:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span>   		      <span class="hljs-string">//</span> <span class="hljs-number">4</span><span class="hljs-string">中保存的是Exception变量</span><br>     <span class="hljs-attr">113:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">135</span><br>     <span class="hljs-attr">116:</span> <span class="hljs-string">aload_3</span><br>     <span class="hljs-attr">117:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>     <span class="hljs-attr">120:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">139</span><br>     <span class="hljs-attr">123:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">10</span><br>     <span class="hljs-attr">125:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span><br>     <span class="hljs-attr">127:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">10</span><br>     <span class="hljs-attr">129:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#13                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V</span><br>     <span class="hljs-attr">132:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">139</span><br>     <span class="hljs-attr">135:</span> <span class="hljs-string">aload_3</span><br>     <span class="hljs-attr">136:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>     <span class="hljs-attr">139:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">9</span><br>     <span class="hljs-attr">141:</span> <span class="hljs-string">athrow</span>			      <span class="hljs-string">//</span> <span class="hljs-string">最终在这里再次throw</span><br>     <span class="hljs-attr">142:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#14                 // Field java/lang/System.out:Ljava/io/PrintStream;</span><br>     <span class="hljs-attr">145:</span> <span class="hljs-string">new</span>           <span class="hljs-comment">#15                 // class java/lang/StringBuilder</span><br>     <span class="hljs-attr">148:</span> <span class="hljs-string">dup</span><br>     <span class="hljs-attr">149:</span> <span class="hljs-string">invokespecial</span> <span class="hljs-comment">#16                 // Method java/lang/StringBuilder.&quot;&lt;init&gt;&quot;:()V</span><br>     <span class="hljs-attr">152:</span> <span class="hljs-string">ldc</span>           <span class="hljs-comment">#17                 // String Out file:</span><br>     <span class="hljs-attr">154:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">157:</span> <span class="hljs-string">aload_0</span><br>     <span class="hljs-attr">158:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">161:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#19                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;</span><br>     <span class="hljs-attr">164:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#20                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br>     <span class="hljs-attr">167:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">252</span><br>     <span class="hljs-attr">170:</span> <span class="hljs-string">astore_3</span>			      <span class="hljs-string">//</span> <span class="hljs-string">由于是IOException，在这里被捕获</span><br>     <span class="hljs-attr">171:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#22                 // Field logger:Lcom/google/common/flogger/FluentLogger;</span><br>     <span class="hljs-attr">174:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#23                 // Method com/google/common/flogger/FluentLogger.atSevere:()Lcom/google/common/flogger/LoggingApi;</span><br>     <span class="hljs-attr">177:</span> <span class="hljs-string">checkcast</span>     <span class="hljs-comment">#24                 // class com/google/common/flogger/FluentLogger$Api</span><br>     <span class="hljs-attr">180:</span> <span class="hljs-string">aload_3</span><br>     <span class="hljs-attr">181:</span> <span class="hljs-string">invokeinterface</span> <span class="hljs-comment">#25,  2           // InterfaceMethod com/google/common/flogger/FluentLogger$Api.withCause:(Ljava/lang/Throwable;)Lcom/google/common/flogger/LoggingApi;</span><br>     <span class="hljs-attr">186:</span> <span class="hljs-string">checkcast</span>     <span class="hljs-comment">#24                 // class com/google/common/flogger/FluentLogger$Api</span><br>     <span class="hljs-attr">189:</span> <span class="hljs-string">invokeinterface</span> <span class="hljs-comment">#26,  1           // InterfaceMethod com/google/common/flogger/FluentLogger$Api.log:()V</span><br>     <span class="hljs-attr">194:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#14                 // Field java/lang/System.out:Ljava/io/PrintStream;</span><br>     <span class="hljs-attr">197:</span> <span class="hljs-string">new</span>           <span class="hljs-comment">#15                 // class java/lang/StringBuilder</span><br>     <span class="hljs-attr">200:</span> <span class="hljs-string">dup</span><br>     <span class="hljs-attr">201:</span> <span class="hljs-string">invokespecial</span> <span class="hljs-comment">#16                 // Method java/lang/StringBuilder.&quot;&lt;init&gt;&quot;:()V</span><br>     <span class="hljs-attr">204:</span> <span class="hljs-string">ldc</span>           <span class="hljs-comment">#17                 // String Out file:</span><br>     <span class="hljs-attr">206:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">209:</span> <span class="hljs-string">aload_0</span><br>     <span class="hljs-attr">210:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">213:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#19                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;</span><br>     <span class="hljs-attr">216:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#20                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br>     <span class="hljs-attr">219:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">252</span><br>     <span class="hljs-attr">222:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">11</span><br>     <span class="hljs-attr">224:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#14                 // Field java/lang/System.out:Ljava/io/PrintStream;</span><br>     <span class="hljs-attr">227:</span> <span class="hljs-string">new</span>           <span class="hljs-comment">#15                 // class java/lang/StringBuilder</span><br>     <span class="hljs-attr">230:</span> <span class="hljs-string">dup</span><br>     <span class="hljs-attr">231:</span> <span class="hljs-string">invokespecial</span> <span class="hljs-comment">#16                 // Method java/lang/StringBuilder.&quot;&lt;init&gt;&quot;:()V</span><br>     <span class="hljs-attr">234:</span> <span class="hljs-string">ldc</span>           <span class="hljs-comment">#17                 // String Out file:</span><br>     <span class="hljs-attr">236:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">239:</span> <span class="hljs-string">aload_0</span><br>     <span class="hljs-attr">240:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">243:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#19                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;</span><br>     <span class="hljs-attr">246:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#20                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br>     <span class="hljs-attr">249:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">11</span><br>     <span class="hljs-attr">251:</span> <span class="hljs-string">athrow</span><br>     <span class="hljs-attr">252:</span> <span class="hljs-string">return</span><br>    <span class="hljs-attr">Exception table:</span><br>       <span class="hljs-string">from</span>    <span class="hljs-string">to</span>  <span class="hljs-string">target</span> <span class="hljs-string">type</span><br>          <span class="hljs-number">70</span>    <span class="hljs-number">74</span>    <span class="hljs-number">77</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/lang/Throwable</span><br>          <span class="hljs-number">21</span>    <span class="hljs-number">61</span>    <span class="hljs-number">96</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/lang/Throwable</span><br>          <span class="hljs-number">21</span>    <span class="hljs-number">61</span>   <span class="hljs-number">105</span>   <span class="hljs-string">any</span><br>         <span class="hljs-number">116</span>   <span class="hljs-number">120</span>   <span class="hljs-number">123</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/lang/Throwable</span><br>          <span class="hljs-number">96</span>   <span class="hljs-number">107</span>   <span class="hljs-number">105</span>   <span class="hljs-string">any</span><br>           <span class="hljs-number">9</span>   <span class="hljs-number">142</span>   <span class="hljs-number">170</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/io/IOException</span><br>           <span class="hljs-number">9</span>   <span class="hljs-number">142</span>   <span class="hljs-number">222</span>   <span class="hljs-string">any</span><br>         <span class="hljs-number">170</span>   <span class="hljs-number">194</span>   <span class="hljs-number">222</span>   <span class="hljs-string">any</span><br>         <span class="hljs-number">222</span>   <span class="hljs-number">224</span>   <span class="hljs-number">222</span>   <span class="hljs-string">any</span><br></code></pre></td></tr></table></figure>
+
+<p>直接假设write函数触发IOException，模拟执行一下。</p>
+<p>从Exception Table中看到，write函数的异常会去往96的astore指令，然后在104通过指令athrow触发异常并去往105。局部变量表中第3个保存的就是FileOutputStream的this指针，通过aload_3获取并判断是否为null，4中保存的是catch到的Exception，是否为null。如果this指针不为空则调用close函数。之后会在141重新throw，由于该Exception是IOException，所以会被170处捕获，也就是进入了Java源代码中的exception block。</p>
+<p>根据上述的执行流程，更接近于以下的Java代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">finalTest</span><span class="hljs-params">(String path, String[] contant)</span> </span>&#123;<br>    File outFile = <span class="hljs-keyword">new</span> File(path);<br>    <span class="hljs-keyword">try</span> &#123;<br>        FileOutputStream os = <span class="hljs-keyword">new</span> FileOutputStream(outFile);<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">for</span> (String s : contant) &#123;<br>                os.write(s.getBytes());<br>            &#125;<br>        &#125; <span class="hljs-keyword">catch</span>(Throwable e) &#123;<br>            <span class="hljs-keyword">if</span> (os != <span class="hljs-keyword">null</span>) &#123;<br>                os.close();<br>            &#125;<br>            <span class="hljs-keyword">throw</span> e;<br>        &#125;<br>    &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>        logger.atSevere().withCause(e).log();<br>    &#125; <span class="hljs-keyword">finally</span> &#123;<br>        System.out.println(<span class="hljs-string">&quot;Out file: &quot;</span> + path);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>注意os.close()本身也是会throw IOException。根据Exception Table，bytecode中117处的那次close调用如果触发异常则会跳转到123，调用addSuppressed进行追加。</p>
+<p>针对这种情况可以做一个简单的验证</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Resource</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">AutoCloseable</span> </span>&#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">close</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;Resource&quot;</span>);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Main</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        <span class="hljs-keyword">try</span> (Resource r = <span class="hljs-keyword">new</span> Resource()) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;main&quot;</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            e.printStackTrace();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>执行后打印的结果</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">java.lang.RuntimeException: main<br>	at <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>main(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>java:<span class="hljs-number">4</span>)<br>	Suppressed: java.lang.RuntimeException: Resource<br>		at <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Resource</span>.</span></span>close(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Resource</span>.</span></span>java:<span class="hljs-number">4</span>)<br>		at <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>main(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>java:<span class="hljs-number">5</span>)<br></code></pre></td></tr></table></figure>
+
+<p>文档链接</p>
+<p><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html">https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html</a></p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Other/">Other</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/bytecode/">bytecode</a>
+                    
+                      <a class="hover-with-bg" href="/tags/Java/">Java</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2019/12/05/dedx/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">费力的dex字节码转换器</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2018/12/24/Typescript-remote-debug/">
+                        <span class="hidden-mobile">Typescript remote debug</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
