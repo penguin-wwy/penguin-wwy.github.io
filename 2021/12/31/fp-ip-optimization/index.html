@@ -16,23 +16,20 @@
   <meta name="author" content="penguin-wwy">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Is sound gradual typing dead? 主要研究sound gradual typing在编译中的收益问题，结论认为通过gradual type来指导编译优化是一件不划算的事情。 简介动态类型语言在构建（或者生长）出复杂软件系统的时候会因为缺少可靠的类型信息而变得难以维护。一种解决方法是通过扩展语言，增量的增加类型信息。Gradual typing就是通过type annota">
+    <meta name="description" content="Can a functional programming language compiler optimize as well as an imperative programming language compiler in practice? 在搜索FP优化的时候看到这么一个问题，高赞回答（总共也就俩回答）总结的挺好。 原回答简单翻译版 你的总结很恰当：对编译器来说，优化函数式程序更容易，但对">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Is sound gradual typing dead 解读">
-<meta property="og:url" content="http://example.com/2021/12/01/Is-sound-gradual-typing-dead/index.html">
+<meta property="og:title" content="懒得想标题">
+<meta property="og:url" content="http://example.com/2021/12/31/fp-ip-optimization/index.html">
 <meta property="og:site_name" content="懒得想标题">
-<meta property="og:description" content="Is sound gradual typing dead? 主要研究sound gradual typing在编译中的收益问题，结论认为通过gradual type来指导编译优化是一件不划算的事情。 简介动态类型语言在构建（或者生长）出复杂软件系统的时候会因为缺少可靠的类型信息而变得难以维护。一种解决方法是通过扩展语言，增量的增加类型信息。Gradual typing就是通过type annota">
+<meta property="og:description" content="Can a functional programming language compiler optimize as well as an imperative programming language compiler in practice? 在搜索FP优化的时候看到这么一个问题，高赞回答（总共也就俩回答）总结的挺好。 原回答简单翻译版 你的总结很恰当：对编译器来说，优化函数式程序更容易，但对">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2021-12-29%2023-39-20.png">
-<meta property="article:published_time" content="2021-12-01T13:02:14.000Z">
-<meta property="article:modified_time" content="2021-12-29T17:54:49.207Z">
+<meta property="article:published_time" content="2021-12-31T15:16:58.259Z">
+<meta property="article:modified_time" content="2021-12-31T15:20:36.446Z">
 <meta property="article:author" content="penguin-wwy">
-<meta property="article:tag" content="type system">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2021-12-29%2023-39-20.png">
   
   
-  <title>Is sound gradual typing dead 解读 - 懒得想标题</title>
+  <title>懒得想标题</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
 
@@ -178,7 +175,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="Is sound gradual typing dead 解读">
+            <span class="h2" id="subtitle" title="">
               
             </span>
 
@@ -188,8 +185,8 @@
   
     <span class="post-meta">
       <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-      <time datetime="2021-12-01 21:02" pubdate>
-        2021年12月1日 晚上
+      <time datetime="2021-12-31 23:16" pubdate>
+        2021年12月31日 晚上
       </time>
     </span>
   
@@ -199,7 +196,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      1.6k 字
+      2.4k 字
     </span>
   
 
@@ -208,7 +205,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      14 分钟
+      21 分钟
     </span>
   
 
@@ -237,34 +234,58 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Is sound gradual typing dead 解读</h1>
+            <h1 style="display: none"></h1>
             
             <div class="markdown-body">
-              <p><a target="_blank" rel="noopener" href="https://www2.ccs.neu.edu/racket/pubs/popl16-tfgnvf.pdf">Is sound gradual typing dead?</a> 主要研究<code>sound gradual typing</code>在编译中的收益问题，结论认为通过<code>gradual type</code>来指导编译优化是一件不划算的事情。</p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>动态类型语言在构建（或者生长）出复杂软件系统的时候会因为缺少可靠的类型信息而变得难以维护。一种解决方法是通过扩展语言，增量的增加类型信息。<code>Gradual typing</code>就是通过<code>type annotation</code>在<code>typed</code>和<code>untyped</code>代码边界增加<code>run-time check</code>，来建立<code>type soundness</code>。</p>
-<p>这种<code>Gradual typing</code>的使用有两个隐含的要求。首先，类型系统适应常见的无类型的编程习惯。这允许程序员在添加类型时对现有代码进行最小的改动。其次，性能代价是可以容忍的，理想情况下新增加的类型对于性能优化应该是有益的。</p>
-<p>而这篇文章通过实验手段评估了<code>Gradual type system</code>对性能的影响，结论是这种类型系统的代价是不可容忍的，因此提出了<strong>sound gradual typing is dead</strong>。</p>
-<h2 id="实验结论"><a href="#实验结论" class="headerlink" title="实验结论"></a>实验结论</h2><p>实验基于<code>Typed Racket</code>实现，方法是对于一个完整程序，对其中n个模块标注type。实现一个lattice，Top是全部模块<code>typed</code>，Bottom是全部模块<code>untyped</code>，然后进行性能测试。</p>
-<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2021-12-29%2023-39-20.png" srcset="/img/loading.gif" lazyload></p>
-<p>如图所示是一个通过执行时间对比的<code>pyerformance lattice</code>，被涂色的圆点表示<code>typed module</code>，未涂色的表示<code>untyped module</code>。当所有模块被标注类型之后（Top），性能提升约30%。说明当可以对任意<code>operator</code>、<code>field access</code>执行<code>specialization</code>和<code>type check</code>的情况下，对性能是有益的。</p>
-<p>然而对于几乎所有的部分类型标注都出现了不同程度的性能下降。实验中观察到如下几点：</p>
-<ul>
-<li>对<code>main</code>模块增加<code>annotation</code>对性能几乎没有影响，因为它只是一个驱动模块；</li>
-<li>在任何一个主要模块–<code>data</code>、<code>label</code>或<code>structs</code>–上添加类型，而其他模块不添加类型，会导致速度至少降低35x。这组模块是紧密耦合的。增加一个未类型化的边界来分隔这组模块的元素，会导致相互引用时，增加相关的检查成本；</li>
-<li>进一步观察<code>data</code>和<code>label</code>可以发现，后者通过一个适配器模块依赖于前者。当两个模块中的任何一个没有类型化时，这个适配器引入了一个边界检查。当这两个模块都是类型化的，但所有其他模块都是未类型化的，速度就会降低到13x左右。<code>structs</code>模块以同样的方式依赖于<code>data</code>，另外还依赖于<code>label</code>。因此，在<code>structs</code>和<code>data</code>都被类型化的配置中，仍然有很大的减慢。当所有三个模块都被类型化时，速度会降低到5x；</li>
-<li>最后，接近最差减速情况的配置是<code>data</code>未被类型化，但其他几个模块被类型化。考虑到上面提到的耦合性，这是有道理的；在未类型化的数据和其他类型化的模块之间引起的巨大性能降低；</li>
-</ul>
-<h2 id="误差"><a href="#误差" class="headerlink" title="误差"></a>误差</h2><p>原文中认为可能影响实验结论的几个点：</p>
-<ul>
-<li>Benchmark太小并且每种配置一个core并发执行的（这个地方听起来有点扯）；</li>
-<li>Benchmark所引用的其他库都是<code>untyped</code>；</li>
-<li>对一个具体变量<code>type annotation</code>很少是唯一的，这种选择可能会影响性能；</li>
-<li>Typed Racket自身实现的问题，它会编译成Racket并且使用一个传统的JIT编译。它没有尝试消除冗余的类型检查；</li>
-</ul>
-<h2 id="个人评价"><a href="#个人评价" class="headerlink" title="个人评价"></a>个人评价</h2><p>感觉实验结果并不靠谱，特别是Typed Racket本身的编译实现和优化能力相当值得怀疑。但是至少说明两点：</p>
-<ul>
-<li>即便是依赖库<code>untyped</code>的情况下，对全程序进行类型标注也是有益的，这预示着对于大型程序来说，部分核心代码进行类型标注从而带来性能提升是可行的；</li>
-<li><code>type check</code>的负载在相当多的情况下是无法用带来的优化消除的，类型特化这类的优化可能需要更加精确才行；</li>
+              <p><a target="_blank" rel="noopener" href="https://www.quora.com/Can-a-functional-programming-language-compiler-optimize-as-well-as-an-imperative-programming-language-compiler-in-practice">Can a functional programming language compiler optimize as well as an imperative programming language compiler in practice?</a></p>
+<p>在搜索FP优化的时候看到这么一个问题，高赞回答（总共也就俩回答）总结的挺好。</p>
+<h3 id="原回答简单翻译版"><a href="#原回答简单翻译版" class="headerlink" title="原回答简单翻译版"></a>原回答简单翻译版</h3><blockquote>
+<p>你的总结很恰当：对编译器来说，优化函数式程序更容易，但对程序员来说，优化命令式代码更容易。而且，至少现在，在大多数对性能敏感的情况下，程序员比编译器更知道如何优化代码。</p>
+</blockquote>
+<blockquote>
+<p>大多数现代的优化编译器并不考虑多种可能的方式来优化一个给定的程序。相反，它们有一套由各种启发式方法指导的优化序列。对于任何给定的程序，优化过程是单向的，不是基于搜索的。优化器不进行回溯。这意味着，拥有更多可能的优化可能会使优化编译器更难编写，但不会使代码更难被编译器优化。优化的数量其实并不重要。</p>
+</blockquote>
+<blockquote>
+<p>由于编译器是一次性地进行优化，而不是尝试这些优化，如果效果不好，再进行回溯，所以实际的优化有两个主要的限制：它们必须是可证明正确的，而且它们必须永远不会降低性能。(或者，至少是几乎不降低性能）。</p>
+</blockquote>
+<blockquote>
+<p>第一个约束是使函数式语言（或者至少是像Haskell这样的纯语言）更容易优化的原因。许多高级别的优化涉及到移动、复制甚至是部分评估代码。对于<em>pure code</em>要证明这些转换保留语义正确是很容易的，但对于有<em>side effect</em>的代码，要证明这一点是相当困难的，甚至常常是不可能的。虽然命令式编译器勇敢地分析代码以检测和追踪效果，但如果语言能保证纯洁性，那就容易多了。</p>
+</blockquote>
+<blockquote>
+<p>这使得像Haskell这样的语言能够大大地利用某些高级优化的优势。也许最重要的一个是内联，即用函数主体的内联副本来代替函数调用。内联对于其他优化来说是一个强大的倍增器：内联的函数体可以被化简，部分特化，并与它的其他上下文一起被优化。从某种意义上说，内联将更简单的局部优化变成更强大的全局优化。</p>
+</blockquote>
+<blockquote>
+<p>GHC可以跨越模块边界内联代码，在不需要极大代价的情况下进行全程序优化。它甚至还保留了单独的编译。经典的全程序优化的大部分复杂性来自于需要跟踪状态如何在程序中传播的流程分析。这不仅是困难的，特别是在不同的模块之间，而且还必须是保守的性质，排除了部分本可能的优化。而在纯函数式语言中，这些都是不必要的。</p>
+</blockquote>
+<blockquote>
+<p>跨模块内联和其他优化的结合让Haskell有了一些极其高级的抽象，比如<a target="_blank" rel="noopener" href="https://hackage.haskell.org/package/lens">lenses</a>而不影响性能。</p>
+</blockquote>
+<blockquote>
+<p>事实上，Haskell的优化非常容易推理，它允许库以重写规则的形式添加新的优化功能。即使在Haskell中，这也绝对是一个面向专家的功能，很容易搞砸；在任何其他语言中，这完全是一场噩梦。(而且，重写规则通过内联得到了极大的支持，这使得编译器可以将它们应用于不同地方的代码）。</p>
+</blockquote>
+<blockquote>
+<p>像这样的高级优化在随处可见副作用的命令式语言中要难得多。为了保持正确性，他们必须明显地更加保守，要么少做要么不做。一个可爱的例子，在优化之前，命令式程序实际上被翻译成了一种不可变的中间形式–单静态赋值（SSA），其中变量被精确地赋值一次。这只是更容易操作而已。(转换的确切细节是限制高层优化可以应用于命令式程序的部分原因)。</p>
+</blockquote>
+<blockquote>
+<p>尽管如此，现代的命令式编译器还是不遗余力地进行高级优化–这是对从事编译器工作的人和所花费的大量时间或精力的证明。在许多方面，GHC实际上比最先进的命令式编译器更简单，而且投入的研发努力也少得多，但仍能通过广泛的优化取得令人印象深刻的结果，这主要是因为语言本身使它更容易。</p>
+</blockquote>
+<blockquote>
+<p>当然，这主要是指高层次的优化：对代码进行广泛的、通常是非局部的修改，甚至可能改变所涉及的逻辑。编译器也可以通过<code>select instruction</code>、<code>register alloc</code>等，从低级别的优化中获得性能。这些优化发生在一个点上，源语言之间的差异是毫无意义的，原则上函数式语言或命令式语言可以用得同样好。</p>
+</blockquote>
+<blockquote>
+<p>在实践中，某些命令式语言往往有最好的底层优化，因为人们已经投入了大量的工作来实现它们。另一方面，GHC在这方面相对有限，很大程度上是因为它是由研究驱动的，将低级优化应用于函数式语言并不是很新颖。这也是LLVM后端令人兴奋的原因之一，特别是对于计算密集型代码：它让GHC重新使用为高性能C++开发的低级优化，而不必自己重新实现。</p>
+</blockquote>
+<blockquote>
+<p>然而，即使是现代编译器，仍有许多关键细节严重影响性能，但只能通过手工解决。这就是命令式语言真正领先的地方，因为它们提供了对底层机器的更直接的控制。这让程序员可以有意识地考虑一些重要的细节，如缓存行为，减少额外的操作和内存查询，并普遍促使程序更好地反映CPU的执行情况。这也让程序员可以针对原始吞吐量以外的因素进行优化，如一致性（用于实时计算）或能源效率。这在某种程度上在函数式语言中仍然是可能的，但尴尬的是，这种行为会使得它违背了语言的核心抽象。更困难的是，函数式语言对其运行时系统和垃圾收集器的依赖程度明显高于C或C++等底层命令式语言。</p>
+</blockquote>
+<blockquote>
+<p>因此，命令式程序，至少在给程序员精细控制内存管理的系统语言中，程序员肯定更容易进行优化。反过来说，函数式程序，尤其是像Haskell这样的纯函数式，更容易被编译器优化，尤其是高级别的优化。</p>
+</blockquote>
+<h3 id="发表点个人观点"><a href="#发表点个人观点" class="headerlink" title="发表点个人观点"></a>发表点个人观点</h3><ul>
+<li><p>纯FP对side effect的严格控制是会给编译优化带来好处的，特别是对各种motion相关的优化，扩大了范围减少了工作量。但是对于混合范式的语言，比如scala，这样的假设或者保证是不成立的，那么可能会因为需要更多的interprocedural optimization导致优化效率下降。</p>
+</li>
+<li><p>另一点可以利用的是immutable object。是否有可能通过shape analysis之类的手段，配合为immutable object而设计的heap model，来提高程序执行中的对象分配、拷贝、引用效率，提高缓存命中指导GC运行。但这个方向目前还没（至少我不知道）有突出的进展。</p>
+</li>
 </ul>
 
             </div>
@@ -272,20 +293,6 @@
             <div>
               <div class="post-metas mb-3">
                 
-                  <div class="post-meta mr-3">
-                    <i class="iconfont icon-category"></i>
-                    
-                      <a class="hover-with-bg" href="/categories/paper%E9%98%85%E8%AF%BB/">paper阅读</a>
-                    
-                  </div>
-                
-                
-                  <div class="post-meta">
-                    <i class="iconfont icon-tags"></i>
-                    
-                      <a class="hover-with-bg" href="/tags/type-system/">type system</a>
-                    
-                  </div>
                 
               </div>
               
@@ -300,18 +307,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2021/12/31/fp-ip-optimization/">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile"></span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2021/11/29/restart/">
-                        <span class="hidden-mobile">Blog复活辣</span>
+                      <a href="/2021/12/01/Is-sound-gradual-typing-dead/">
+                        <span class="hidden-mobile">Is sound gradual typing dead 解读</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
