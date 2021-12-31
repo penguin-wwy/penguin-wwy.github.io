@@ -4,13 +4,25 @@
   
   
   <entry>
-    <title></title>
+    <title>Functional programming compiler optimize</title>
     <link href="/2021/12/31/fp-ip-optimization/"/>
     <url>/2021/12/31/fp-ip-optimization/</url>
     
     <content type="html"><![CDATA[<p><a href="https://www.quora.com/Can-a-functional-programming-language-compiler-optimize-as-well-as-an-imperative-programming-language-compiler-in-practice">Can a functional programming language compiler optimize as well as an imperative programming language compiler in practice?</a></p><p>在搜索FP优化的时候看到这么一个问题，高赞回答（总共也就俩回答）总结的挺好。</p><h3 id="原回答简单翻译版"><a href="#原回答简单翻译版" class="headerlink" title="原回答简单翻译版"></a>原回答简单翻译版</h3><blockquote><p>你的总结很恰当：对编译器来说，优化函数式程序更容易，但对程序员来说，优化命令式代码更容易。而且，至少现在，在大多数对性能敏感的情况下，程序员比编译器更知道如何优化代码。</p></blockquote><blockquote><p>大多数现代的优化编译器并不考虑多种可能的方式来优化一个给定的程序。相反，它们有一套由各种启发式方法指导的优化序列。对于任何给定的程序，优化过程是单向的，不是基于搜索的。优化器不进行回溯。这意味着，拥有更多可能的优化可能会使优化编译器更难编写，但不会使代码更难被编译器优化。优化的数量其实并不重要。</p></blockquote><blockquote><p>由于编译器是一次性地进行优化，而不是尝试这些优化，如果效果不好，再进行回溯，所以实际的优化有两个主要的限制：它们必须是可证明正确的，而且它们必须永远不会降低性能。(或者，至少是几乎不降低性能）。</p></blockquote><blockquote><p>第一个约束是使函数式语言（或者至少是像Haskell这样的纯语言）更容易优化的原因。许多高级别的优化涉及到移动、复制甚至是部分评估代码。对于<em>pure code</em>要证明这些转换保留语义正确是很容易的，但对于有<em>side effect</em>的代码，要证明这一点是相当困难的，甚至常常是不可能的。虽然命令式编译器勇敢地分析代码以检测和追踪效果，但如果语言能保证纯洁性，那就容易多了。</p></blockquote><blockquote><p>这使得像Haskell这样的语言能够大大地利用某些高级优化的优势。也许最重要的一个是内联，即用函数主体的内联副本来代替函数调用。内联对于其他优化来说是一个强大的倍增器：内联的函数体可以被化简，部分特化，并与它的其他上下文一起被优化。从某种意义上说，内联将更简单的局部优化变成更强大的全局优化。</p></blockquote><blockquote><p>GHC可以跨越模块边界内联代码，在不需要极大代价的情况下进行全程序优化。它甚至还保留了单独的编译。经典的全程序优化的大部分复杂性来自于需要跟踪状态如何在程序中传播的流程分析。这不仅是困难的，特别是在不同的模块之间，而且还必须是保守的性质，排除了部分本可能的优化。而在纯函数式语言中，这些都是不必要的。</p></blockquote><blockquote><p>跨模块内联和其他优化的结合让Haskell有了一些极其高级的抽象，比如<a href="https://hackage.haskell.org/package/lens">lenses</a>而不影响性能。</p></blockquote><blockquote><p>事实上，Haskell的优化非常容易推理，它允许库以重写规则的形式添加新的优化功能。即使在Haskell中，这也绝对是一个面向专家的功能，很容易搞砸；在任何其他语言中，这完全是一场噩梦。(而且，重写规则通过内联得到了极大的支持，这使得编译器可以将它们应用于不同地方的代码）。</p></blockquote><blockquote><p>像这样的高级优化在随处可见副作用的命令式语言中要难得多。为了保持正确性，他们必须明显地更加保守，要么少做要么不做。一个可爱的例子，在优化之前，命令式程序实际上被翻译成了一种不可变的中间形式–单静态赋值（SSA），其中变量被精确地赋值一次。这只是更容易操作而已。(转换的确切细节是限制高层优化可以应用于命令式程序的部分原因)。</p></blockquote><blockquote><p>尽管如此，现代的命令式编译器还是不遗余力地进行高级优化–这是对从事编译器工作的人和所花费的大量时间或精力的证明。在许多方面，GHC实际上比最先进的命令式编译器更简单，而且投入的研发努力也少得多，但仍能通过广泛的优化取得令人印象深刻的结果，这主要是因为语言本身使它更容易。</p></blockquote><blockquote><p>当然，这主要是指高层次的优化：对代码进行广泛的、通常是非局部的修改，甚至可能改变所涉及的逻辑。编译器也可以通过<code>select instruction</code>、<code>register alloc</code>等，从低级别的优化中获得性能。这些优化发生在一个点上，源语言之间的差异是毫无意义的，原则上函数式语言或命令式语言可以用得同样好。</p></blockquote><blockquote><p>在实践中，某些命令式语言往往有最好的底层优化，因为人们已经投入了大量的工作来实现它们。另一方面，GHC在这方面相对有限，很大程度上是因为它是由研究驱动的，将低级优化应用于函数式语言并不是很新颖。这也是LLVM后端令人兴奋的原因之一，特别是对于计算密集型代码：它让GHC重新使用为高性能C++开发的低级优化，而不必自己重新实现。</p></blockquote><blockquote><p>然而，即使是现代编译器，仍有许多关键细节严重影响性能，但只能通过手工解决。这就是命令式语言真正领先的地方，因为它们提供了对底层机器的更直接的控制。这让程序员可以有意识地考虑一些重要的细节，如缓存行为，减少额外的操作和内存查询，并普遍促使程序更好地反映CPU的执行情况。这也让程序员可以针对原始吞吐量以外的因素进行优化，如一致性（用于实时计算）或能源效率。这在某种程度上在函数式语言中仍然是可能的，但尴尬的是，这种行为会使得它违背了语言的核心抽象。更困难的是，函数式语言对其运行时系统和垃圾收集器的依赖程度明显高于C或C++等底层命令式语言。</p></blockquote><blockquote><p>因此，命令式程序，至少在给程序员精细控制内存管理的系统语言中，程序员肯定更容易进行优化。反过来说，函数式程序，尤其是像Haskell这样的纯函数式，更容易被编译器优化，尤其是高级别的优化。</p></blockquote><h3 id="发表点个人观点"><a href="#发表点个人观点" class="headerlink" title="发表点个人观点"></a>发表点个人观点</h3><ul><li><p>纯FP对side effect的严格控制是会给编译优化带来好处的，特别是对各种motion相关的优化，扩大了范围减少了工作量。但是对于混合范式的语言，比如scala，这样的假设或者保证是不成立的，那么可能会因为需要更多的interprocedural optimization导致优化效率下降。</p></li><li><p>另一点可以利用的是immutable object。是否有可能通过shape analysis之类的手段，配合为immutable object而设计的heap model，来提高程序执行中的对象分配、拷贝、引用效率，提高缓存命中指导GC运行。但这个方向目前还没（至少我不知道）有突出的进展。</p></li></ul>]]></content>
     
     
+    <categories>
+      
+      <category>PL</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>optimize</tag>
+      
+    </tags>
     
   </entry>
   
