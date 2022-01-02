@@ -17,15 +17,15 @@
   <meta name="keywords" content="">
   
     <meta property="og:type" content="website">
-<meta property="og:title" content="懒得想标题">
-<meta property="og:url" content="http://example.com/page/2/index.html">
+<meta property="og:title" content="归档">
+<meta property="og:url" content="http://example.com/archives/2022/01/index.html">
 <meta property="og:site_name" content="懒得想标题">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="penguin-wwy">
 <meta name="twitter:card" content="summary_large_image">
   
   
-  <title>懒得想标题</title>
+  <title>归档 - 懒得想标题</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
 
@@ -55,7 +55,7 @@
 
 
 <body>
-  <header style="height: 100vh;">
+  <header style="height: 60vh;">
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand" href="/">
@@ -156,17 +156,13 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="^ _ ^">
+            <span class="h2" id="subtitle" title="归档">
               
             </span>
 
             
           </div>
 
-          
-            <div class="scroll-down-bar">
-              <i class="iconfont icon-arrowdown"></i>
-            </div>
           
         </div>
       </div>
@@ -177,262 +173,30 @@
     
       <div class="container nopadding-x-md">
         <div class="py-5" id="board"
-          style=margin-top:0>
+          >
           
           <div class="container">
             <div class="row">
               <div class="col-12 col-md-10 m-auto">
                 
 
-
-  <div class="row mx-auto index-card">
+<div class="list-group">
+  <p class="h4">共计 17 篇文章</p>
+  <hr>
+  
+  
     
+      
+      <p class="h5">2022</p>
     
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2017/12/21/replace-function-name/" target="_self">
-          replace_function_name
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2017/12/21/replace-function-name/" target="_self">
-          
-          replace_function_name是由一个完整的clang编译器，在CodeGen时通过修改CodeGenModule::getMangledName函数的流程来达到修改函数名的目的。 项目地址 https:&#x2F;&#x2F;github.com&#x2F;penguin-wwy&#x2F;replace_function_name  详细使用方式和效果对比请看github。
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2017-12-21 15:10" pubdate>
-              2017-12-21
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/Open-Source-Project/">Open Source Project</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/LLVM/">LLVM</a>
-            
-              <a href="/tags/Security/">Security</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2017/12/18/code-obf3/" target="_self">
-          代码混淆——复杂度进化
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2017/12/18/code-obf3/" target="_self">
-          
-          上一篇中我们对Armariris进行了一定的改进，主要在对体量较大的BasicBlock进行了切割，增加了一条从当前BasciBlock到它前驱的控制流，并且恒为假。 有两个比较明显的问题： （1）分支判断过于简单； （2）增加的只是一条控制流线，并没有增加程序块，所以程序复杂度上升的有限。
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2017-12-18 22:56" pubdate>
-              2017-12-18
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/%E4%BB%A3%E7%A0%81%E6%B7%B7%E6%B7%86/">代码混淆</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/LLVM/">LLVM</a>
-            
-              <a href="/tags/Security/">Security</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2017/11/28/code-obf2/" target="_self">
-          代码混淆——控制流扁平的开源实践和改进
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2017/11/28/code-obf2/" target="_self">
-          
-          孤挺花（Armariris）: 由上海交通大学密码与计算机安全实验室维护的LLVM混淆框架，支持多平台、多语言。目前支持的功能主要有控制流混淆、指令替换、字符串加密。https:&#x2F;&#x2F;github.com&#x2F;GoSSIP-SJTU&#x2F;Armariris#armariris
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2017-11-28 22:40" pubdate>
-              2017-11-28
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/%E4%BB%A3%E7%A0%81%E6%B7%B7%E6%B7%86/">代码混淆</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/LLVM/">LLVM</a>
-            
-              <a href="/tags/Security/">Security</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2017/09/16/C++_type_cast/" target="_self">
-          C++类型转化表达式总结
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2017/09/16/C++_type_cast/" target="_self">
-          
-          const_cast根据 http:&#x2F;&#x2F;www.cplusplus.com 的说法，const_cast用于对象指针或引用的const的添加和删除操作 例子如下：
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2017-09-16 15:02" pubdate>
-              2017-09-16
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/C/">C++</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/C/">C++</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2017/06/07/code-obf1/" target="_self">
-          代码混淆——控制流扁平定义与算法
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2017/06/07/code-obf1/" target="_self">
-          
-          扁平化的定义所谓控制流是指代码执行时指令的执行顺序。在各种控制逻辑的作用下，程序会沿着特定的逻辑顺序执行。一般控制逻辑包括有\无条件分支、循环、函数调用等。在正常情况下程序的逻辑非常好理解（代码逻辑不好的程序员都死了。。。）
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2017-06-07 15:31" pubdate>
-              2017-06-07
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/%E4%BB%A3%E7%A0%81%E6%B7%B7%E6%B7%86/">代码混淆</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/Security/">Security</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
+    <a href="/2022/01/01/lazy-bb-versioning/" class="list-group-item list-group-item-action">
+      <span class="archive-post-title">Lazy Basic Block Versioning</span>
+      <time style="float: right;">01-01</time>
+    </a>
+  
+</div>
 
 
-
-  <nav aria-label="navigation">
-    <span class="pagination" id="pagination">
-      <a class="extend prev" rel="prev" href="/"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
-    </span>
-  </nav>
 
 
 

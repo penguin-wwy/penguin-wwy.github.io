@@ -24,7 +24,7 @@
 <meta property="og:description" content="谁来背锅try-with-resource是Java 1.7中新增的，来打开资源，而无需手动关闭语法糖。官方介绍如下：  The try-with-resources statement is a try statement that declares one or more resources.A resource is an object that must be closed after t">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-06-18T17:17:28.000Z">
-<meta property="article:modified_time" content="2021-12-15T17:55:16.073Z">
+<meta property="article:modified_time" content="2022-01-02T17:52:26.623Z">
 <meta property="article:author" content="penguin-wwy">
 <meta property="article:tag" content="bytecode">
 <meta property="article:tag" content="Java">
@@ -43,7 +43,17 @@
     
     
       
-      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+      
+        
+          
+          
+          
+        
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-solarizedlight.min.css" />
+      
+      
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.css" />
+      
     
   
 
@@ -198,7 +208,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      11k 字
+      12k 字
     </span>
   
 
@@ -207,7 +217,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      91 分钟
+      97 分钟
     </span>
   
 
@@ -246,44 +256,312 @@
 <p>还十分贴心的贴上了说明代码<span id="more"></span></p>
 <blockquote>
 <p>The following example reads the first line from a file. It uses an instance of BufferedReader to read data from the file. BufferedReader is a resource that must be closed after the program is finished with it:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java">&gt;<span class="hljs-function"><span class="hljs-keyword">static</span> String <span class="hljs-title">readFirstLineFromFile</span><span class="hljs-params">(String path)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br><span class="hljs-keyword">try</span> (BufferedReader br = <span class="hljs-keyword">new</span> BufferedReader(<span class="hljs-keyword">new</span> FileReader(path))) &#123;<br>	<span class="hljs-keyword">return</span> br.readLine();<br>&#125;<br>&gt;&#125;<br></code></pre></td></tr></table></figure>
-
+</blockquote>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token keyword">static</span> <span class="token class-name">String</span> <span class="token function">readFirstLineFromFile</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">IOException</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">(</span><span class="token class-name">BufferedReader</span> br <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">FileReader</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> br<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+<blockquote>
 <p>In this example, the resource declared in the try-with-resources statement is a BufferedReader. The declaration statement appears within parentheses immediately after the try keyword. The class BufferedReader, in Java SE 7 and later, implements the interface java.lang.AutoCloseable. Because the BufferedReader instance is declared in a try-with-resource statement, it will be closed regardless of whether the try statement completes normally or abruptly (as a result of the method BufferedReader.readLine throwing an IOException).</p>
 <p>Prior to Java SE 7, you can use a finally block to ensure that a resource is closed regardless of whether the try statement completes normally or abruptly. The following example uses a finally block instead of a try-with-resources statement:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java">&gt;<span class="hljs-function"><span class="hljs-keyword">static</span> String <span class="hljs-title">readFirstLineFromFileWithFinallyBlock</span><span class="hljs-params">(String path)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br>BufferedReader br = <span class="hljs-keyword">new</span> BufferedReader(<span class="hljs-keyword">new</span> FileReader(path));<br><span class="hljs-keyword">try</span> &#123;<br>	<span class="hljs-keyword">return</span> br.readLine();<br>&#125; <span class="hljs-keyword">finally</span> &#123;<br>	<span class="hljs-keyword">if</span> (br != <span class="hljs-keyword">null</span>) br.close();<br>&#125;<br>&gt;&#125;<br></code></pre></td></tr></table></figure>
 </blockquote>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token keyword">static</span> <span class="token class-name">String</span> <span class="token function">readFirstLineFromFileWithFinallyBlock</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">IOException</span> <span class="token punctuation">&#123;</span>
+	<span class="token class-name">BufferedReader</span> br <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">FileReader</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token keyword">try</span> <span class="token punctuation">&#123;</span>
+		<span class="token keyword">return</span> br<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">&#125;</span> <span class="token keyword">finally</span> <span class="token punctuation">&#123;</span>
+		<span class="token keyword">if</span> <span class="token punctuation">(</span>br <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> br<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
 <p>尤其是最后那句</p>
 <blockquote>
 <p>The following example uses a finally block instead of a try-with-resources statement</p>
 </blockquote>
 <p>让我误以为这两条代码是完全等价的。</p>
 <h3 id="由soot而来的疑惑"><a href="#由soot而来的疑惑" class="headerlink" title="由soot而来的疑惑"></a>由soot而来的疑惑</h3><p>一个简单的例子</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> com.google.common.flogger.FluentLogger;<br><br><span class="hljs-keyword">import</span> java.io.File;<br><span class="hljs-keyword">import</span> java.io.FileInputStream;<br><span class="hljs-keyword">import</span> java.io.FileOutputStream;<br><span class="hljs-keyword">import</span> java.io.IOException;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FinalTest</span> </span>&#123;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> FluentLogger logger = FluentLogger.forEnclosingClass();<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">finalTest</span><span class="hljs-params">(String path, String[] contant)</span> </span>&#123;<br>        File outFile = <span class="hljs-keyword">new</span> File(path);<br>        <span class="hljs-keyword">try</span> (FileOutputStream os = <span class="hljs-keyword">new</span> FileOutputStream(outFile)) &#123;<br>            <span class="hljs-keyword">for</span> (String s : contant) &#123;<br>                os.write(s.getBytes());<br>            &#125;<br>        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>            logger.atSevere().withCause(e).log();<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            System.out.println(<span class="hljs-string">&quot;Out file: &quot;</span> + path);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token keyword">import</span> <span class="token namespace">com<span class="token punctuation">.</span>google<span class="token punctuation">.</span>common<span class="token punctuation">.</span>flogger<span class="token punctuation">.</span></span><span class="token class-name">FluentLogger</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">File</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">FileInputStream</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">FileOutputStream</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token namespace">java<span class="token punctuation">.</span>io<span class="token punctuation">.</span></span><span class="token class-name">IOException</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">FinalTest</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">FluentLogger</span> logger <span class="token operator">=</span> <span class="token class-name">FluentLogger</span><span class="token punctuation">.</span><span class="token function">forEnclosingClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">finalTest</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> contant<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token class-name">File</span> outFile <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">(</span><span class="token class-name">FileOutputStream</span> os <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileOutputStream</span><span class="token punctuation">(</span>outFile<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> s <span class="token operator">:</span> contant<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                os<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">getBytes</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">&#125;</span>
+        <span class="token punctuation">&#125;</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            logger<span class="token punctuation">.</span><span class="token function">atSevere</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">withCause</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span> <span class="token keyword">finally</span> <span class="token punctuation">&#123;</span>
+            <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"Out file: "</span> <span class="token operator">+</span> path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>按照文档中的例子，close函数等价于在finally中执行，也就是说在exception block执行完成之后</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java">FileOutputStream os = <span class="hljs-keyword">new</span> FileOutputStream(outFile)<br><span class="hljs-keyword">try</span> &#123;<br>	...<br>&#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>	...<br>&#125; <span class="hljs-keyword">finally</span> &#123;<br>    os.close(); <span class="hljs-comment">// 这里执行</span><br>    System.out.println(<span class="hljs-string">&quot;Out file: &quot;</span> + path);<br>    os.close(); <span class="hljs-comment">// 或者这里执行</span><br>&#125;<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token class-name">FileOutputStream</span> os <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileOutputStream</span><span class="token punctuation">(</span>outFile<span class="token punctuation">)</span>
+<span class="token keyword">try</span> <span class="token punctuation">&#123;</span>
+	<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">&#125;</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">&#125;</span> <span class="token keyword">finally</span> <span class="token punctuation">&#123;</span>
+    os<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 这里执行</span>
+    <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"Out file: "</span> <span class="token operator">+</span> path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    os<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 或者这里执行</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>然而它生成的jimple</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><code class="hljs jimple">public static void finalTest(java.lang.String, java.lang.String[])<br>&#123;<br>    ...<br>    ...<br><br> label08:<br>    if $r8 == null goto label13;<br><br>    if r32 == null goto label12;<br><br> label09:<br>    virtualinvoke $r8.&lt;java.io.FileOutputStream: void close()&gt;();<br><br> label10:<br>    goto label13;<br><br> label11:<br>    $r23 := @caughtexception;<br><br>    virtualinvoke r32.&lt;java.lang.Throwable: void addSuppressed(java.lang.Throwable)&gt;($r23);<br><br>    goto label13;<br><br> label12:<br>    virtualinvoke $r8.&lt;java.io.FileOutputStream: void close()&gt;();<br><br> label13:<br>    throw $r21;<br><br>...<br>    ...<br><br> label15: // exception label<br>    $r10 := @caughtexception;<br><br>    $r11 = &lt;com.sbrella.test.FinalTest: com.google.common.flogger.FluentLogger logger&gt;;<br><br>    $r12 = virtualinvoke $r11.&lt;com.google.common.flogger.FluentLogger: com.google.common.flogger.LoggingApi atSevere()&gt;();<br><br>    $r13 = (com.google.common.flogger.FluentLogger$Api) $r12;<br><br>    $r14 = interfaceinvoke $r13.&lt;com.google.common.flogger.FluentLogger$Api: com.google.common.flogger.LoggingApi withCause(java.lang.Throwable)&gt;($r10);<br><br>    $r15 = (com.google.common.flogger.FluentLogger$Api) $r14;<br><br>    interfaceinvoke $r15.&lt;com.google.common.flogger.FluentLogger$Api: void log()&gt;();<br><br> label16:<br>    $r17 = &lt;java.lang.System: java.io.PrintStream out&gt;;<br><br>    $r16 = new java.lang.StringBuilder;<br><br>    specialinvoke $r16.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();<br><br>    $r18 = virtualinvoke $r16.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;Out file: &quot;);<br><br>    $r19 = virtualinvoke $r18.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(r0);<br><br>    $r20 = virtualinvoke $r19.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();<br><br>    virtualinvoke $r17.&lt;java.io.PrintStream: void println(java.lang.String)&gt;($r20);<br><br>    goto label19;<br><br> label17:<br>    $r25 := @caughtexception;<br><br> label18:<br>    $r27 = &lt;java.lang.System: java.io.PrintStream out&gt;;<br><br>    $r26 = new java.lang.StringBuilder;<br><br>    specialinvoke $r26.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();<br><br>    $r28 = virtualinvoke $r26.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;Out file: &quot;);<br><br>    $r29 = virtualinvoke $r28.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(r0);<br><br>    $r30 = virtualinvoke $r29.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();<br><br>    virtualinvoke $r27.&lt;java.io.PrintStream: void println(java.lang.String)&gt;($r30);<br><br>    throw $r25;<br><br> label19:<br>    return;<br>&#125;<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-jimple" data-language="jimple"><code class="language-jimple">public static void finalTest(java.lang.String, java.lang.String[])
+&#123;
+    ...
+    ...
+
+ label08:
+    if $r8 &#x3D;&#x3D; null goto label13;
+
+    if r32 &#x3D;&#x3D; null goto label12;
+
+ label09:
+    virtualinvoke $r8.&lt;java.io.FileOutputStream: void close()&gt;();
+
+ label10:
+    goto label13;
+
+ label11:
+    $r23 :&#x3D; @caughtexception;
+
+    virtualinvoke r32.&lt;java.lang.Throwable: void addSuppressed(java.lang.Throwable)&gt;($r23);
+
+    goto label13;
+
+ label12:
+    virtualinvoke $r8.&lt;java.io.FileOutputStream: void close()&gt;();
+
+ label13:
+    throw $r21;
+
+...
+    ...
+
+ label15: &#x2F;&#x2F; exception label
+    $r10 :&#x3D; @caughtexception;
+
+    $r11 &#x3D; &lt;com.sbrella.test.FinalTest: com.google.common.flogger.FluentLogger logger&gt;;
+
+    $r12 &#x3D; virtualinvoke $r11.&lt;com.google.common.flogger.FluentLogger: com.google.common.flogger.LoggingApi atSevere()&gt;();
+
+    $r13 &#x3D; (com.google.common.flogger.FluentLogger$Api) $r12;
+
+    $r14 &#x3D; interfaceinvoke $r13.&lt;com.google.common.flogger.FluentLogger$Api: com.google.common.flogger.LoggingApi withCause(java.lang.Throwable)&gt;($r10);
+
+    $r15 &#x3D; (com.google.common.flogger.FluentLogger$Api) $r14;
+
+    interfaceinvoke $r15.&lt;com.google.common.flogger.FluentLogger$Api: void log()&gt;();
+
+ label16:
+    $r17 &#x3D; &lt;java.lang.System: java.io.PrintStream out&gt;;
+
+    $r16 &#x3D; new java.lang.StringBuilder;
+
+    specialinvoke $r16.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();
+
+    $r18 &#x3D; virtualinvoke $r16.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;Out file: &quot;);
+
+    $r19 &#x3D; virtualinvoke $r18.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(r0);
+
+    $r20 &#x3D; virtualinvoke $r19.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();
+
+    virtualinvoke $r17.&lt;java.io.PrintStream: void println(java.lang.String)&gt;($r20);
+
+    goto label19;
+
+ label17:
+    $r25 :&#x3D; @caughtexception;
+
+ label18:
+    $r27 &#x3D; &lt;java.lang.System: java.io.PrintStream out&gt;;
+
+    $r26 &#x3D; new java.lang.StringBuilder;
+
+    specialinvoke $r26.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();
+
+    $r28 &#x3D; virtualinvoke $r26.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;Out file: &quot;);
+
+    $r29 &#x3D; virtualinvoke $r28.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(r0);
+
+    $r30 &#x3D; virtualinvoke $r29.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();
+
+    virtualinvoke $r27.&lt;java.io.PrintStream: void println(java.lang.String)&gt;($r30);
+
+    throw $r25;
+
+ label19:
+    return;
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>只有一个exception label，且没有任何跳转。也就是说在exception执行完之后直接执行finally中的println，然后便退出了。</p>
 <p>那close呢，在exception之前就执行了。</p>
 <h3 id="Bytecode的答案"><a href="#Bytecode的答案" class="headerlink" title="Bytecode的答案"></a>Bytecode的答案</h3><p>要知道真正的执行顺序自然是到class文件中寻找答案，直接看bytecode</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-string">public</span> <span class="hljs-string">static</span> <span class="hljs-string">void</span> <span class="hljs-string">finalTest(java.lang.String,</span> <span class="hljs-string">java.lang.String[]);</span><br>  <span class="hljs-attr">descriptor:</span> <span class="hljs-string">(Ljava/lang/String;[Ljava/lang/String;)V</span><br>  <span class="hljs-attr">flags:</span> <span class="hljs-string">ACC_PUBLIC,</span> <span class="hljs-string">ACC_STATIC</span><br>  <span class="hljs-attr">Code:</span><br>    <span class="hljs-string">stack=3,</span> <span class="hljs-string">locals=12,</span> <span class="hljs-string">args_size=2</span><br><span class="hljs-string">...</span><br>      <span class="hljs-string">...</span><br>      <span class="hljs-attr">49:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#9                  // Method java/lang/String.getBytes:()[B</span><br>      <span class="hljs-attr">52:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#10                 // write 函数触发异常 java/io/FileOutputStream.write:([B)V</span><br>      <span class="hljs-attr">55:</span> <span class="hljs-string">iinc</span>          <span class="hljs-number">7</span><span class="hljs-string">,</span> <span class="hljs-number">1</span><br>      <span class="hljs-attr">58:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">32</span><br>      <span class="hljs-attr">61:</span> <span class="hljs-string">aload_3</span><br>      <span class="hljs-attr">62:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">142</span><br>      <span class="hljs-attr">65:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span><br>      <span class="hljs-attr">67:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">89</span><br>      <span class="hljs-attr">70:</span> <span class="hljs-string">aload_3</span><br>      <span class="hljs-attr">71:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>      <span class="hljs-attr">74:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">142</span><br>      <span class="hljs-attr">77:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">5</span><br>      <span class="hljs-attr">79:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span><br>      <span class="hljs-attr">81:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">5</span><br>      <span class="hljs-attr">83:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#13                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V</span><br>      <span class="hljs-attr">86:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">142</span><br>      <span class="hljs-attr">89:</span> <span class="hljs-string">aload_3</span><br>      <span class="hljs-attr">90:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>      <span class="hljs-attr">93:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">142</span><br>      <span class="hljs-attr">96:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">5</span>		      <span class="hljs-string">//</span> <span class="hljs-string">根据exception</span> <span class="hljs-string">table，write的异常跳转到这里</span><br>      <span class="hljs-attr">98:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">5</span><br>     <span class="hljs-attr">100:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">4</span><br>     <span class="hljs-attr">102:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">5</span><br>     <span class="hljs-attr">104:</span> <span class="hljs-string">athrow</span>			      <span class="hljs-string">//</span> <span class="hljs-string">throw</span> <span class="hljs-string">一个异常在并跳转到105</span><br>     <span class="hljs-attr">105:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">9</span><br>     <span class="hljs-attr">107:</span> <span class="hljs-string">aload_3</span>      		      <span class="hljs-string">//</span> <span class="hljs-string">取出FileOutputStream</span><br>     <span class="hljs-attr">108:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">139</span><br>     <span class="hljs-attr">111:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span>   		      <span class="hljs-string">//</span> <span class="hljs-number">4</span><span class="hljs-string">中保存的是Exception变量</span><br>     <span class="hljs-attr">113:</span> <span class="hljs-string">ifnull</span>        <span class="hljs-number">135</span><br>     <span class="hljs-attr">116:</span> <span class="hljs-string">aload_3</span><br>     <span class="hljs-attr">117:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>     <span class="hljs-attr">120:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">139</span><br>     <span class="hljs-attr">123:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">10</span><br>     <span class="hljs-attr">125:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">4</span><br>     <span class="hljs-attr">127:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">10</span><br>     <span class="hljs-attr">129:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#13                 // Method java/lang/Throwable.addSuppressed:(Ljava/lang/Throwable;)V</span><br>     <span class="hljs-attr">132:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">139</span><br>     <span class="hljs-attr">135:</span> <span class="hljs-string">aload_3</span><br>     <span class="hljs-attr">136:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#11                 // Method java/io/FileOutputStream.close:()V</span><br>     <span class="hljs-attr">139:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">9</span><br>     <span class="hljs-attr">141:</span> <span class="hljs-string">athrow</span>			      <span class="hljs-string">//</span> <span class="hljs-string">最终在这里再次throw</span><br>     <span class="hljs-attr">142:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#14                 // Field java/lang/System.out:Ljava/io/PrintStream;</span><br>     <span class="hljs-attr">145:</span> <span class="hljs-string">new</span>           <span class="hljs-comment">#15                 // class java/lang/StringBuilder</span><br>     <span class="hljs-attr">148:</span> <span class="hljs-string">dup</span><br>     <span class="hljs-attr">149:</span> <span class="hljs-string">invokespecial</span> <span class="hljs-comment">#16                 // Method java/lang/StringBuilder.&quot;&lt;init&gt;&quot;:()V</span><br>     <span class="hljs-attr">152:</span> <span class="hljs-string">ldc</span>           <span class="hljs-comment">#17                 // String Out file:</span><br>     <span class="hljs-attr">154:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">157:</span> <span class="hljs-string">aload_0</span><br>     <span class="hljs-attr">158:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">161:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#19                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;</span><br>     <span class="hljs-attr">164:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#20                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br>     <span class="hljs-attr">167:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">252</span><br>     <span class="hljs-attr">170:</span> <span class="hljs-string">astore_3</span>			      <span class="hljs-string">//</span> <span class="hljs-string">由于是IOException，在这里被捕获</span><br>     <span class="hljs-attr">171:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#22                 // Field logger:Lcom/google/common/flogger/FluentLogger;</span><br>     <span class="hljs-attr">174:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#23                 // Method com/google/common/flogger/FluentLogger.atSevere:()Lcom/google/common/flogger/LoggingApi;</span><br>     <span class="hljs-attr">177:</span> <span class="hljs-string">checkcast</span>     <span class="hljs-comment">#24                 // class com/google/common/flogger/FluentLogger$Api</span><br>     <span class="hljs-attr">180:</span> <span class="hljs-string">aload_3</span><br>     <span class="hljs-attr">181:</span> <span class="hljs-string">invokeinterface</span> <span class="hljs-comment">#25,  2           // InterfaceMethod com/google/common/flogger/FluentLogger$Api.withCause:(Ljava/lang/Throwable;)Lcom/google/common/flogger/LoggingApi;</span><br>     <span class="hljs-attr">186:</span> <span class="hljs-string">checkcast</span>     <span class="hljs-comment">#24                 // class com/google/common/flogger/FluentLogger$Api</span><br>     <span class="hljs-attr">189:</span> <span class="hljs-string">invokeinterface</span> <span class="hljs-comment">#26,  1           // InterfaceMethod com/google/common/flogger/FluentLogger$Api.log:()V</span><br>     <span class="hljs-attr">194:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#14                 // Field java/lang/System.out:Ljava/io/PrintStream;</span><br>     <span class="hljs-attr">197:</span> <span class="hljs-string">new</span>           <span class="hljs-comment">#15                 // class java/lang/StringBuilder</span><br>     <span class="hljs-attr">200:</span> <span class="hljs-string">dup</span><br>     <span class="hljs-attr">201:</span> <span class="hljs-string">invokespecial</span> <span class="hljs-comment">#16                 // Method java/lang/StringBuilder.&quot;&lt;init&gt;&quot;:()V</span><br>     <span class="hljs-attr">204:</span> <span class="hljs-string">ldc</span>           <span class="hljs-comment">#17                 // String Out file:</span><br>     <span class="hljs-attr">206:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">209:</span> <span class="hljs-string">aload_0</span><br>     <span class="hljs-attr">210:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">213:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#19                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;</span><br>     <span class="hljs-attr">216:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#20                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br>     <span class="hljs-attr">219:</span> <span class="hljs-string">goto</span>          <span class="hljs-number">252</span><br>     <span class="hljs-attr">222:</span> <span class="hljs-string">astore</span>        <span class="hljs-number">11</span><br>     <span class="hljs-attr">224:</span> <span class="hljs-string">getstatic</span>     <span class="hljs-comment">#14                 // Field java/lang/System.out:Ljava/io/PrintStream;</span><br>     <span class="hljs-attr">227:</span> <span class="hljs-string">new</span>           <span class="hljs-comment">#15                 // class java/lang/StringBuilder</span><br>     <span class="hljs-attr">230:</span> <span class="hljs-string">dup</span><br>     <span class="hljs-attr">231:</span> <span class="hljs-string">invokespecial</span> <span class="hljs-comment">#16                 // Method java/lang/StringBuilder.&quot;&lt;init&gt;&quot;:()V</span><br>     <span class="hljs-attr">234:</span> <span class="hljs-string">ldc</span>           <span class="hljs-comment">#17                 // String Out file:</span><br>     <span class="hljs-attr">236:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">239:</span> <span class="hljs-string">aload_0</span><br>     <span class="hljs-attr">240:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#18                 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;</span><br>     <span class="hljs-attr">243:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#19                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;</span><br>     <span class="hljs-attr">246:</span> <span class="hljs-string">invokevirtual</span> <span class="hljs-comment">#20                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br>     <span class="hljs-attr">249:</span> <span class="hljs-string">aload</span>         <span class="hljs-number">11</span><br>     <span class="hljs-attr">251:</span> <span class="hljs-string">athrow</span><br>     <span class="hljs-attr">252:</span> <span class="hljs-string">return</span><br>    <span class="hljs-attr">Exception table:</span><br>       <span class="hljs-string">from</span>    <span class="hljs-string">to</span>  <span class="hljs-string">target</span> <span class="hljs-string">type</span><br>          <span class="hljs-number">70</span>    <span class="hljs-number">74</span>    <span class="hljs-number">77</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/lang/Throwable</span><br>          <span class="hljs-number">21</span>    <span class="hljs-number">61</span>    <span class="hljs-number">96</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/lang/Throwable</span><br>          <span class="hljs-number">21</span>    <span class="hljs-number">61</span>   <span class="hljs-number">105</span>   <span class="hljs-string">any</span><br>         <span class="hljs-number">116</span>   <span class="hljs-number">120</span>   <span class="hljs-number">123</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/lang/Throwable</span><br>          <span class="hljs-number">96</span>   <span class="hljs-number">107</span>   <span class="hljs-number">105</span>   <span class="hljs-string">any</span><br>           <span class="hljs-number">9</span>   <span class="hljs-number">142</span>   <span class="hljs-number">170</span>   <span class="hljs-string">Class</span> <span class="hljs-string">java/io/IOException</span><br>           <span class="hljs-number">9</span>   <span class="hljs-number">142</span>   <span class="hljs-number">222</span>   <span class="hljs-string">any</span><br>         <span class="hljs-number">170</span>   <span class="hljs-number">194</span>   <span class="hljs-number">222</span>   <span class="hljs-string">any</span><br>         <span class="hljs-number">222</span>   <span class="hljs-number">224</span>   <span class="hljs-number">222</span>   <span class="hljs-string">any</span><br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">public static void finalTest(java.lang.String, java.lang.String[]);
+  descriptor: (Ljava&#x2F;lang&#x2F;String;[Ljava&#x2F;lang&#x2F;String;)V
+  flags: ACC_PUBLIC, ACC_STATIC
+  Code:
+    stack&#x3D;3, locals&#x3D;12, args_size&#x3D;2
+...
+      ...
+      49: invokevirtual #9                  &#x2F;&#x2F; Method java&#x2F;lang&#x2F;String.getBytes:()[B
+      52: invokevirtual #10                 &#x2F;&#x2F; write 函数触发异常 java&#x2F;io&#x2F;FileOutputStream.write:([B)V
+      55: iinc          7, 1
+      58: goto          32
+      61: aload_3
+      62: ifnull        142
+      65: aload         4
+      67: ifnull        89
+      70: aload_3
+      71: invokevirtual #11                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;FileOutputStream.close:()V
+      74: goto          142
+      77: astore        5
+      79: aload         4
+      81: aload         5
+      83: invokevirtual #13                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;Throwable.addSuppressed:(Ljava&#x2F;lang&#x2F;Throwable;)V
+      86: goto          142
+      89: aload_3
+      90: invokevirtual #11                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;FileOutputStream.close:()V
+      93: goto          142
+      96: astore        5		      &#x2F;&#x2F; 根据exception table，write的异常跳转到这里
+      98: aload         5
+     100: astore        4
+     102: aload         5
+     104: athrow			      &#x2F;&#x2F; throw 一个异常在并跳转到105
+     105: astore        9
+     107: aload_3      		      &#x2F;&#x2F; 取出FileOutputStream
+     108: ifnull        139
+     111: aload         4   		      &#x2F;&#x2F; 4中保存的是Exception变量
+     113: ifnull        135
+     116: aload_3
+     117: invokevirtual #11                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;FileOutputStream.close:()V
+     120: goto          139
+     123: astore        10
+     125: aload         4
+     127: aload         10
+     129: invokevirtual #13                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;Throwable.addSuppressed:(Ljava&#x2F;lang&#x2F;Throwable;)V
+     132: goto          139
+     135: aload_3
+     136: invokevirtual #11                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;FileOutputStream.close:()V
+     139: aload         9
+     141: athrow			      &#x2F;&#x2F; 最终在这里再次throw
+     142: getstatic     #14                 &#x2F;&#x2F; Field java&#x2F;lang&#x2F;System.out:Ljava&#x2F;io&#x2F;PrintStream;
+     145: new           #15                 &#x2F;&#x2F; class java&#x2F;lang&#x2F;StringBuilder
+     148: dup
+     149: invokespecial #16                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.&quot;&lt;init&gt;&quot;:()V
+     152: ldc           #17                 &#x2F;&#x2F; String Out file:
+     154: invokevirtual #18                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.append:(Ljava&#x2F;lang&#x2F;String;)Ljava&#x2F;lang&#x2F;StringBuilder;
+     157: aload_0
+     158: invokevirtual #18                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.append:(Ljava&#x2F;lang&#x2F;String;)Ljava&#x2F;lang&#x2F;StringBuilder;
+     161: invokevirtual #19                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.toString:()Ljava&#x2F;lang&#x2F;String;
+     164: invokevirtual #20                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;PrintStream.println:(Ljava&#x2F;lang&#x2F;String;)V
+     167: goto          252
+     170: astore_3			      &#x2F;&#x2F; 由于是IOException，在这里被捕获
+     171: getstatic     #22                 &#x2F;&#x2F; Field logger:Lcom&#x2F;google&#x2F;common&#x2F;flogger&#x2F;FluentLogger;
+     174: invokevirtual #23                 &#x2F;&#x2F; Method com&#x2F;google&#x2F;common&#x2F;flogger&#x2F;FluentLogger.atSevere:()Lcom&#x2F;google&#x2F;common&#x2F;flogger&#x2F;LoggingApi;
+     177: checkcast     #24                 &#x2F;&#x2F; class com&#x2F;google&#x2F;common&#x2F;flogger&#x2F;FluentLogger$Api
+     180: aload_3
+     181: invokeinterface #25,  2           &#x2F;&#x2F; InterfaceMethod com&#x2F;google&#x2F;common&#x2F;flogger&#x2F;FluentLogger$Api.withCause:(Ljava&#x2F;lang&#x2F;Throwable;)Lcom&#x2F;google&#x2F;common&#x2F;flogger&#x2F;LoggingApi;
+     186: checkcast     #24                 &#x2F;&#x2F; class com&#x2F;google&#x2F;common&#x2F;flogger&#x2F;FluentLogger$Api
+     189: invokeinterface #26,  1           &#x2F;&#x2F; InterfaceMethod com&#x2F;google&#x2F;common&#x2F;flogger&#x2F;FluentLogger$Api.log:()V
+     194: getstatic     #14                 &#x2F;&#x2F; Field java&#x2F;lang&#x2F;System.out:Ljava&#x2F;io&#x2F;PrintStream;
+     197: new           #15                 &#x2F;&#x2F; class java&#x2F;lang&#x2F;StringBuilder
+     200: dup
+     201: invokespecial #16                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.&quot;&lt;init&gt;&quot;:()V
+     204: ldc           #17                 &#x2F;&#x2F; String Out file:
+     206: invokevirtual #18                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.append:(Ljava&#x2F;lang&#x2F;String;)Ljava&#x2F;lang&#x2F;StringBuilder;
+     209: aload_0
+     210: invokevirtual #18                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.append:(Ljava&#x2F;lang&#x2F;String;)Ljava&#x2F;lang&#x2F;StringBuilder;
+     213: invokevirtual #19                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.toString:()Ljava&#x2F;lang&#x2F;String;
+     216: invokevirtual #20                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;PrintStream.println:(Ljava&#x2F;lang&#x2F;String;)V
+     219: goto          252
+     222: astore        11
+     224: getstatic     #14                 &#x2F;&#x2F; Field java&#x2F;lang&#x2F;System.out:Ljava&#x2F;io&#x2F;PrintStream;
+     227: new           #15                 &#x2F;&#x2F; class java&#x2F;lang&#x2F;StringBuilder
+     230: dup
+     231: invokespecial #16                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.&quot;&lt;init&gt;&quot;:()V
+     234: ldc           #17                 &#x2F;&#x2F; String Out file:
+     236: invokevirtual #18                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.append:(Ljava&#x2F;lang&#x2F;String;)Ljava&#x2F;lang&#x2F;StringBuilder;
+     239: aload_0
+     240: invokevirtual #18                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.append:(Ljava&#x2F;lang&#x2F;String;)Ljava&#x2F;lang&#x2F;StringBuilder;
+     243: invokevirtual #19                 &#x2F;&#x2F; Method java&#x2F;lang&#x2F;StringBuilder.toString:()Ljava&#x2F;lang&#x2F;String;
+     246: invokevirtual #20                 &#x2F;&#x2F; Method java&#x2F;io&#x2F;PrintStream.println:(Ljava&#x2F;lang&#x2F;String;)V
+     249: aload         11
+     251: athrow
+     252: return
+    Exception table:
+       from    to  target type
+          70    74    77   Class java&#x2F;lang&#x2F;Throwable
+          21    61    96   Class java&#x2F;lang&#x2F;Throwable
+          21    61   105   any
+         116   120   123   Class java&#x2F;lang&#x2F;Throwable
+          96   107   105   any
+           9   142   170   Class java&#x2F;io&#x2F;IOException
+           9   142   222   any
+         170   194   222   any
+         222   224   222   any<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>直接假设write函数触发IOException，模拟执行一下。</p>
 <p>从Exception Table中看到，write函数的异常会去往96的astore指令，然后在104通过指令athrow触发异常并去往105。局部变量表中第3个保存的就是FileOutputStream的this指针，通过aload_3获取并判断是否为null，4中保存的是catch到的Exception，是否为null。如果this指针不为空则调用close函数。之后会在141重新throw，由于该Exception是IOException，所以会被170处捕获，也就是进入了Java源代码中的exception block。</p>
 <p>根据上述的执行流程，更接近于以下的Java代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">finalTest</span><span class="hljs-params">(String path, String[] contant)</span> </span>&#123;<br>    File outFile = <span class="hljs-keyword">new</span> File(path);<br>    <span class="hljs-keyword">try</span> &#123;<br>        FileOutputStream os = <span class="hljs-keyword">new</span> FileOutputStream(outFile);<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">for</span> (String s : contant) &#123;<br>                os.write(s.getBytes());<br>            &#125;<br>        &#125; <span class="hljs-keyword">catch</span>(Throwable e) &#123;<br>            <span class="hljs-keyword">if</span> (os != <span class="hljs-keyword">null</span>) &#123;<br>                os.close();<br>            &#125;<br>            <span class="hljs-keyword">throw</span> e;<br>        &#125;<br>    &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>        logger.atSevere().withCause(e).log();<br>    &#125; <span class="hljs-keyword">finally</span> &#123;<br>        System.out.println(<span class="hljs-string">&quot;Out file: &quot;</span> + path);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">finalTest</span><span class="token punctuation">(</span><span class="token class-name">String</span> path<span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> contant<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token class-name">File</span> outFile <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span>path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">&#123;</span>
+        <span class="token class-name">FileOutputStream</span> os <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileOutputStream</span><span class="token punctuation">(</span>outFile<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> s <span class="token operator">:</span> contant<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                os<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>s<span class="token punctuation">.</span><span class="token function">getBytes</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">&#125;</span>
+        <span class="token punctuation">&#125;</span> <span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token class-name">Throwable</span> e<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>os <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                os<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">&#125;</span>
+            <span class="token keyword">throw</span> e<span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        logger<span class="token punctuation">.</span><span class="token function">atSevere</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">withCause</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span> <span class="token keyword">finally</span> <span class="token punctuation">&#123;</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"Out file: "</span> <span class="token operator">+</span> path<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>注意os.close()本身也是会throw IOException。根据Exception Table，bytecode中117处的那次close调用如果触发异常则会跳转到123，调用addSuppressed进行追加。</p>
 <p>针对这种情况可以做一个简单的验证</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Resource</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">AutoCloseable</span> </span>&#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">close</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;Resource&quot;</span>);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Resource</span> <span class="token keyword">implements</span> <span class="token class-name">AutoCloseable</span> <span class="token punctuation">&#123;</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"Resource"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Main</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        <span class="hljs-keyword">try</span> (Resource r = <span class="hljs-keyword">new</span> Resource()) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;main&quot;</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            e.printStackTrace();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Main</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">(</span><span class="token class-name">Resource</span> r <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Resource</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"main"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>执行后打印的结果</p>
-<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">java.lang.RuntimeException: main<br>	at <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>main(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>java:<span class="hljs-number">4</span>)<br>	Suppressed: java.lang.RuntimeException: Resource<br>		at <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Resource</span>.</span></span>close(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Resource</span>.</span></span>java:<span class="hljs-number">4</span>)<br>		at <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>main(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Main</span>.</span></span>java:<span class="hljs-number">5</span>)<br></code></pre></td></tr></table></figure>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">java.lang.RuntimeException: main
+	at Main.main(Main.java:4)
+	Suppressed: java.lang.RuntimeException: Resource
+		at Resource.close(Resource.java:4)
+		at Main.main(Main.java:5)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
 <p>文档链接</p>
 <p><a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html">https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html</a></p>
@@ -478,6 +756,8 @@
 
 
 
+  
+    
   
 
 
