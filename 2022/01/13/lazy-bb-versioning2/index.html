@@ -16,22 +16,26 @@
   <meta name="author" content="penguin-wwy">
   <meta name="keywords" content="">
   
-    <meta name="description" content="链接链接的本质就是把多个不同编译单元（目标文件）相互整合到一起。整合的方式是通过地址的确定。 从单个编译单元的角度看，自己内部的声明可以按有无定义分为两类。对于有定义的一类，程序执行时自然可以定位地址完成相应操作，也就是地址是已知的。对于无定义的一类，由于是采用的外部的函数或者全局变量，地址是未知的，链接就是给未知的地址进行定位。">
+    <meta name="description" content="Interprocedural Type Specialization of JavaScript Programs Without Type Analysis 来自ECOOP2016，是在Simple and Effective Type Check Removal through Lazy Basic Block Versioning基础上实现的，主要将BBV扩展到interprocedura">
 <meta property="og:type" content="article">
-<meta property="og:title" content="链接与符号">
-<meta property="og:url" content="http://example.com/2018/01/22/link_and_symbol/index.html">
+<meta property="og:title" content="Lazy Basic Block Versioning续">
+<meta property="og:url" content="http://example.com/2022/01/13/lazy-bb-versioning2/index.html">
 <meta property="og:site_name" content="懒得想标题">
-<meta property="og:description" content="链接链接的本质就是把多个不同编译单元（目标文件）相互整合到一起。整合的方式是通过地址的确定。 从单个编译单元的角度看，自己内部的声明可以按有无定义分为两类。对于有定义的一类，程序执行时自然可以定位地址完成相应操作，也就是地址是已知的。对于无定义的一类，由于是采用的外部的函数或者全局变量，地址是未知的，链接就是给未知的地址进行定位。">
+<meta property="og:description" content="Interprocedural Type Specialization of JavaScript Programs Without Type Analysis 来自ECOOP2016，是在Simple and Effective Type Check Removal through Lazy Basic Block Versioning基础上实现的，主要将BBV扩展到interprocedura">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2018-01-22T06:49:04.000Z">
-<meta property="article:modified_time" content="2022-01-02T17:50:18.003Z">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-04-41.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-11-24.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-15-33.png">
+<meta property="article:published_time" content="2022-01-12T17:22:01.000Z">
+<meta property="article:modified_time" content="2022-01-12T17:33:06.756Z">
 <meta property="article:author" content="penguin-wwy">
-<meta property="article:tag" content="编译原理">
-<meta property="article:tag" content="链接">
+<meta property="article:tag" content="optimization">
+<meta property="article:tag" content="compiler">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-04-41.png">
   
   
-  <title>链接与符号 - 懒得想标题</title>
+  <title>Lazy Basic Block Versioning续 - 懒得想标题</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
 
@@ -199,7 +203,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="链接与符号">
+            <span class="h2" id="subtitle" title="Lazy Basic Block Versioning续">
               
             </span>
 
@@ -209,8 +213,8 @@
   
     <span class="post-meta">
       <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-      <time datetime="2018-01-22 14:49" pubdate>
-        2018年1月22日 下午
+      <time datetime="2022-01-13 01:22" pubdate>
+        2022年1月13日 凌晨
       </time>
     </span>
   
@@ -220,7 +224,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      2.2k 字
+      2.6k 字
     </span>
   
 
@@ -229,7 +233,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      19 分钟
+      22 分钟
     </span>
   
 
@@ -258,47 +262,74 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">链接与符号</h1>
+            <h1 style="display: none">Lazy Basic Block Versioning续</h1>
             
             <div class="markdown-body">
-              <h3 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h3><p>链接的本质就是把多个不同编译单元（目标文件）相互整合到一起。整合的方式是通过地址的确定。</p>
-<p>从单个编译单元的角度看，自己内部的声明可以按有无定义分为两类。对于有定义的一类，程序执行时自然可以定位地址完成相应操作，也就是地址是已知的。对于无定义的一类，由于是采用的外部的函数或者全局变量，地址是未知的，链接就是给未知的地址进行定位。<span id="more"></span></p>
-<p>在链接中统称函数和变量为符号，链接过程就是以符号为依据进行地址定位。</p>
-<p>__静态链接__：单个编译单元中的引用在未连接前地址设置为0，链接时依据重定位表进行重定位</p>
-<p>__动态链接__：将从动态共享对象中的引用标记为一个动态链接符号（链接时同样需要动态库参与，为了使用动态库的符号表确定哪个引用为动态链接符号）。执行时动态链接器与动态库都被映射到进程地址空间</p>
-<h3 id="LLVM-IR-链接符号"><a href="#LLVM-IR-链接符号" class="headerlink" title="LLVM IR 链接符号"></a>LLVM IR 链接符号</h3><p>具体的链接类型在IR阶段表现的更加彻底。这些都是通过源码的各种关键字（如：static，extern），声明定义方式（是否是引用）在IR中进行成显性的表示。</p>
-<p>下面内容来自llvm文档 <a target="_blank" rel="noopener" href="https://llvm.org/docs/LangRef.html#linkage-types">https://llvm.org/docs/LangRef.html#linkage-types</a></p>
-<p>所有全局变量和函数都有一种下列链接类型</p>
-<p><strong>private</strong></p>
-<p>只能被当前模块的对象直接访问。成为__private__的一个可能原因是为了避免重命名后的冲突。模块中的私有符号的所有引用都可以被更新，而这不会出现在任何目标文件的符号表中。</p>
-<p><strong>internal</strong></p>
-<p>与__private__相似，但是会作为一个local符号（比如ELF中STB_LOCAL）加入到目标文件符号表中。这个概念类似于C语言中static关键字。</p>
-<p><strong>available_externally</strong></p>
-<p>有__available_externally__关键字的全局变量将不会被输出到模块对应的目标文件中。从链接情况看，这相当于external声明。为了给内联和优化的发生提供外部模块全局变量的基础。__available_externally__的全局变量允许被随意丢弃、内联和优化，只可用于definitions，不可用于declarations。</p>
-<p><strong>linkonce</strong></p>
-<p>链接发生时将与其他同名全局变量合并。这个用于实现内联、模板或者其他必须在每个使用到它的编译单元都生成的代码，但是在之后可能被更明确的定义所覆盖。没有被引用的__linkonce__变量可以被丢弃。注意__linkonce__实际上不允许优化将函数主体内联到调用者中，因为它无法确定该定义是否是最终定义或者会不会被更明确的定义覆盖。使用__linkonce_odr__可使用内联或其他优化。</p>
-<p><strong>weak</strong></p>
-<p>__weak__拥有与__linkonce__相似的合并语义，不同的是没有引用的变量无法被丢弃。用于C源码中声明为”weak”的全局变量。</p>
-<p><strong>common</strong></p>
-<p>与__weak__类似，但在C中通常用于全局领域暂定的定义，比如”int x;”。拥有__common__的符号采用与__weak__同样的方式合并，并且没有引用也不会被删除。__common__可能没有一个明确的段，必须有0初始化，并且可能不会被记为’constant’。函数和别名可能不被记为__common__。</p>
-<p><strong>appending</strong></p>
-<p>仅被用于指向数组类型的全局指针。当两个__appending__一起链接的时候，这两个全局变量会被附加在一起。这是LLVM类型安全，等价于当.o文件被链接时让系统链接器在段中将同名附加到一起。不幸的是这与任何特性都不相符，所以仅能用于专门的LLVM解释器比如”llvm.global_ctors”</p>
-<p><strong>extern_weak</strong></p>
-<p>该链接的语义遵循ELF目标文件模型：符号在链接之前是weak，如果没有被链接，这个符号就变成了空，而不是一个未定义的引用。</p>
-<p><strong>linkonce_odr</strong>, <strong>weak_odr</strong></p>
-<p>一些语言允许不同的全局变量被合并，比如两个不同语义的函数。其他语言，比如C++，确保只有相同的全局变量被合并（one definition rule – ODR）。可以使用这两种linkage类型来说明只有相同才被合并。其他内容与不加odr的相同。</p>
-<p><strong>external</strong></p>
-<p>如果没有使用上述符号，说明全局可见，参与链接并可被用于解析外部符号。</p>
-<h3 id="关于强弱符号"><a href="#关于强弱符号" class="headerlink" title="关于强弱符号"></a>关于强弱符号</h3><p>默认函数和初始化的全局变量为强符号，未初始化以及明确声明属性为weak的全局变量为弱符号。</p>
-<p>强符号不允许多次定义；强符号覆盖弱符号；若没有强符号以占用空间最大的弱符号为准。</p>
-<p>当符号全为弱符号且可能出现的类型不同时，单个编译单元无法确定符号大小。</p>
-<p>common块的目的就是为了存放未确定最终大小的全局变量（可能被覆盖）。等最终链接完成还是会被存放到.BSS段</p>
-<p>直接导致需要COMMON机制的原因是编译器和链接器允许不同类型的弱符号存在，但最本质的原因还是链接器不支持符号类型，即无法判断各个符号的类型是否一致。（《程序员的自我修养》P112）</p>
-<p>BSS段存放（未初始化或者初始化值为0）的（全局变量和局部静态变量）。BSS段长度由段表保存，符号则由符号表保存，只有记录不占据磁盘空间，加载后占据内存空间</p>
-<p>有些编译器会将全局的未初始化变量存放在BSS，有些不存放只预留一个未定义的全局变量符号。</p>
-<p>当全局变量初始为0时，尽管为强符号，但是放在BSS段，不占据磁盘空间。</p>
-<p>全局变量未初始化，值为0，在common段，加载时确定大小，然后放入BSS段。</p>
-<p>note：当变量不在common段时，为强符号，也就是说弱符号等价于在common段。</p>
+              <p><a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/c64954e9f91090537b13dfcd727aa76b612646ff">Interprocedural Type Specialization of JavaScript Programs Without Type Analysis</a> 来自ECOOP2016，是在Simple and Effective Type Check Removal through Lazy Basic Block Versioning基础上实现的，主要将BBV扩展到interprocedural。<span id="more"></span></p>
+<h3 id="Interprocedural-Basic-Block-Versioning"><a href="#Interprocedural-Basic-Block-Versioning" class="headerlink" title="Interprocedural Basic Block Versioning"></a>Interprocedural Basic Block Versioning</h3><h4 id="Type-Object-Shape"><a href="#Type-Object-Shape" class="headerlink" title="Type Object Shape"></a>Type Object Shape</h4><p>实现过程间BBV主要依赖以下两项：</p>
+<ul>
+<li><code>Type Object Shape</code>，因为在JS中，函数通常被存储在对象中，这包括对象方法和全局函数（JS将全局函数存储为全局对象的属性）。需要将类型标签附加到对象属性中，包括全局变量；</li>
+<li><code>Object Shapes and Shape Tests</code>，目前的商业JS引擎都有一个<strong>object shapes</strong>概念，与Self VM的属性图概念类似。对于任意对象都包含一个指向形状描述的指针，后者提供其内存布局：属性、属性的内存偏移量、属性标志(读写状态等)。而由于遍历这些属性的代价非常高昂，现代JS引擎会通过<strong>PICs(Polymorphic Inline Caches)<strong>来优化属性访问。通常情况下，通过</strong>shape tests</strong>来判断当前缓存是否适用，或者是否需要对PIC进行更新；</li>
+</ul>
+<p>将上述两项结合，实现——<code>Extending Shapes with Types</code>，即一旦通过<code>shape tests</code>确定某个layout之后，同时也获得了对应属性的类型。</p>
+<p>例如对于如下代码</p>
+<div class="code-wrapper"><pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">function</span> <span class="token function">sumList</span> <span class="token punctuation">(</span><span class="token parameter">lst</span> <span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	<span class="token keyword">if</span> <span class="token punctuation">(</span>lst <span class="token operator">==</span> <span class="token keyword">null</span> <span class="token punctuation">)</span>
+		<span class="token keyword">return</span> <span class="token number">0</span>
+	<span class="token keyword">return</span> lst<span class="token punctuation">.</span>val <span class="token operator">+</span> <span class="token function">sumList</span><span class="token punctuation">(</span>lst<span class="token punctuation">.</span>next <span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>可以获得三个带有<code>type tag</code>的<code>object shape</code>，其中<code>G</code>表示全局对象：</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; Linked list node shape
+S1: &#123; val: (slot 0, int32), next: (slot 1, null) &#125;
+S2: &#123; val: (slot 0, int32), next: (slot 1, object) &#125;
+&#x2F;&#x2F; Global object shape
+&#x2F;&#x2F; Closures have method identity information
+G: &#123;
+    ...,
+    Error: (slot 1, closure&#x2F;Error),
+    ...,
+    sumList: (slot 33, closure&#x2F;sumList),
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>可以获得如下CFG：</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">A:	if is_null (lst) goto I:
+
+B: 	if not is_object (lst) goto stub1
+
+C: 	if not is_shape (lst , S1) goto C2
+	val &#x3D; read_slot (lst , 0) &#x2F;&#x2F; val is known to be int32
+	next &#x3D; read_slot (lst , 1) &#x2F;&#x2F; next is known to be null
+D: 	if not is_shape ( globalObj , G) goto stub2
+	sumfn &#x3D; read_slot ( globalObj , 33) &#x2F;&#x2F; sumfn is known to be a closure
+E: 	t1 &#x3D; sumfn ( next )
+	if not is_int32 (t1) goto stub3
+G: 	t2 &#x3D; add_int32 (val , t1)
+	if overflow goto stub4
+H: 	return t2
+
+I: 	return 0
+
+C2: if not is_shape (lst , S2) goto stub5
+	val &#x3D; read_slot (lst , 0) &#x2F;&#x2F; val is known to be int32
+	next &#x3D; read_slot (lst , 1) &#x2F;&#x2F; next is known to be object
+D2: if not is_shape ( globalObj , G) goto stub6
+	sumfn &#x3D; read_slot ( globalObj , 33) &#x2F;&#x2F; sumfn is known to be a closure
+E2: t1 &#x3D; sumfn ( next )
+	if not is_int32 (t1) goto stub7
+G2: t2 &#x3D; add_int32 (val , t1)
+	if overflow goto stub8
+H2: return t2<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>除了<code>type tag</code>之外，还可以附加函数签名信息，这样就可以在<code>callsite</code>上获取完整的<code>callee</code>。</p>
+<h4 id="Entry-Point-Versioning"><a href="#Entry-Point-Versioning" class="headerlink" title="Entry Point Versioning"></a>Entry Point Versioning</h4><p>当在一个<code>callsite</code>位置确定<code>callee</code>之后，同样也就可以确定<code>paramater</code>的类型，此时就可以在<code>callee</code>中生成<code>Entry Basic Block</code>的特化副本。在消除<code>callee</code>中多余的类型测试的同时，还可以在不对参数进行装箱的情况下传递参数，从而减少函数调用的开销。</p>
+<h4 id="Call-Continuation-Specialization"><a href="#Call-Continuation-Specialization" class="headerlink" title="Call Continuation Specialization"></a>Call Continuation Specialization</h4><p>对于<code>callsite</code>另一个问题是返回值类型的传播。对于任意<code>function</code>来说，它可能在程序的任意位置被调用。因此这必然是一个<code>context sensitive</code>的。但是对于JIT而言，可以使用<code>lazy</code>的方式来低成本地执行优化。也就是直到第一次在一个<code>callsite</code>位置返回时才针对返回值类型进行特化，而不是像<code>paramater</code>，当<code>callsite</code>位置的类型确定之后就可以生成对应的<code>machine code</code>。</p>
+<h3 id="Evaluation"><a href="#Evaluation" class="headerlink" title="Evaluation"></a>Evaluation</h3><h4 id="Type-Tests"><a href="#Type-Tests" class="headerlink" title="Type Tests"></a>Type Tests</h4><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-04-41.png" srcset="/img/loading.gif" lazyload></p>
+<p>上图是不同技术可消除的<code>type test</code>的比例。基础的过程内的BBV平均可以消除61%的test，加入<code>typed shapes</code>之后增加到79%，<code>entry spec</code>增加到89%，完全版本则达到94%。</p>
+<h4 id="Type-Analysis"><a href="#Type-Analysis" class="headerlink" title="Type Analysis"></a>Type Analysis</h4><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-11-24.png" srcset="/img/loading.gif" lazyload></p>
+<p>与<code>type analysis</code>对比。</p>
+<h4 id="Execution-time"><a href="#Execution-time" class="headerlink" title="Execution time"></a>Execution time</h4><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-15-33.png" srcset="/img/loading.gif" lazyload></p>
+<h3 id="个人评价"><a href="#个人评价" class="headerlink" title="个人评价"></a>个人评价</h3><p>简单总结，核心是通过<strong>object shape</strong>来扩展BBV到过程间，实现全程序的优化，相对而言的代价要比<code>whole-program type analysis</code>的代价要小。</p>
 
             </div>
             <hr>
@@ -308,7 +339,7 @@
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/categories/Other/">Other</a>
+                      <a class="hover-with-bg" href="/categories/paper%E9%98%85%E8%AF%BB/">paper阅读</a>
                     
                   </div>
                 
@@ -316,9 +347,9 @@
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/tags/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/">编译原理</a>
+                      <a class="hover-with-bg" href="/tags/optimization/">optimization</a>
                     
-                      <a class="hover-with-bg" href="/tags/%E9%93%BE%E6%8E%A5/">链接</a>
+                      <a class="hover-with-bg" href="/tags/compiler/">compiler</a>
                     
                   </div>
                 
@@ -335,18 +366,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2018/01/27/C-17-string-view/">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">C++17 string_view</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2018/01/11/LLDB_and_Python/">
-                        <span class="hidden-mobile">LLDB与Python</span>
+                      <a href="/2022/01/03/lazy-bb-versioning/">
+                        <span class="hidden-mobile">Lazy Basic Block Versioning</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>

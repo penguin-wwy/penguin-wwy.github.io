@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/bbv9.png">
 <meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/bbv10.png">
 <meta property="article:published_time" content="2022-01-02T17:56:19.000Z">
-<meta property="article:modified_time" content="2022-01-02T17:56:43.670Z">
+<meta property="article:modified_time" content="2022-01-12T17:36:04.743Z">
 <meta property="article:author" content="penguin-wwy">
 <meta property="article:tag" content="type system">
 <meta property="article:tag" content="optimization">
@@ -277,14 +277,14 @@
 <p>传统上，语言虚拟机倾向于使用<code>type infer</code>来消除类型检查。但是对于JS、Python这样的动态类型语言，存在三个主要问题：</p>
 <ul>
 <li>这些语言通常不适合于<code>whole-program</code>的类型分析，<code>eval</code>和模块的动态加载等特性会破坏以前的类型信息；</li>
-<li>在时间和内存上的代价使得其并不是在JIT上使用，特别是某些追求编译速度的基线编译器上；</li>
+<li>在时间和内存上的代价使得其并不适合在JIT上使用，特别是某些追求编译速度的基线编译器上；</li>
 <li>某些代码单纯通过分析是无法消除类型检查的，需要进行某些变形；</li>
 </ul>
-<p>由于上述原因，普遍的JS虚拟机设计比如V8、SpiderMonkey等都通过<code>multi-tiered</code>和<code>OSR</code>这样的复杂机制来保证激进优化的同时保证语义正确。</p>
+<p>由于上述原因，普遍的JS虚拟机设计比如V8、SpiderMonkey等都通过<code>multi-tiered</code>和<code>OSR</code>这样的复杂机制在激进优化的同时保证语义正确。</p>
 <p>这篇论文提出一种可以在JIT编译时对关键代码路径消除冗余类型检查的方法——<strong>lazy basic block versioning</strong>（以下简称BBV）。不需要代价昂贵的程序分析技术，不受传统类型分析的精度限制，避免了激进优化导致的实现上的复杂性。</p>
 <p>简单来说Code Generator维护了<code>typing context</code>，保存每个变量的类型。一个类型检查指令会分化出新的<code>typing context</code>，对每个<code>context</code>而言，其中的每个变量的类型都是经过检查的。当遇到一个类型测试分支指令并且参数的类型已知，在代码生成时就可以根据分支方向消除类型检查。</p>
 <p>而编译器可能会对一个basic block生成多个<strong>version</strong>的代码。在该基本块的分支上遇到的每个类型环境都有一个版本。这就允许了可以对该基本块以及它的后继中的活跃变量进行类型特化。虽然基本块的版本是建立在单个基本块的层面上的，但<code>typing context</code>向后继的继续传播带来了对整个控制流图进行<code>type-specializing</code>的机会。</p>
-<p>与传统的<code>type infer</code>相比最大的区别在于，BBV不再需要在推导时计算不动点。对于一个程序点而言，变量的类型可能是多种的。在传统的类型分析中，几种可能的类型将被联合起来，从而导致分析的保守性。BBV则对不同的基本块版本或程序路径，精确的根据上下文来控制类型。</p>
+<p>与传统的<code>type infer</code>相比最大的区别在于，BBV不需要在推导时计算不动点。对于一个程序点而言，变量的类型可能是多种的。在传统的类型分析中，几种可能的类型将被联合起来，从而导致分析的保守性。BBV则对不同的基本块版本或程序路径，精确的根据上下文来控制类型。</p>
 <p>在BBV中循环也不需要被特殊处理，如果首次执行到<code>loop header</code>时的<code>context</code>是<code>C1</code>，那么再次回到<code>loop header</code>时将生成新的<code>C2</code>，以此类推。但由于可能的<code>context</code>是有限的，并且实际上大多数变量在函数中总是维持一种类型，所以生成的<code>version</code>数量也总是有限并且相当少。</p>
 <h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><p>论文实现基于JS虚拟机——Higgs，支持ES5标准，但是作出了一些限制，比如<code>eval</code>只能访问全局变量。</p>
 <p>下面用一个例子来说明。对于一个简单的JS函数：</p>
@@ -363,6 +363,12 @@
                 <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2022/01/13/lazy-bb-versioning2/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Lazy Basic Block Versioning续</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
@@ -476,6 +482,16 @@
   
 
   
+  <!-- 备案信息 -->
+  <div class="beian">
+    <span>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow noopener">
+        京ICP备17069049号-1
+      </a>
+    </span>
+    
+  </div>
+
 
   
 </footer>
