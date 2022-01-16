@@ -28,7 +28,7 @@
 <meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_mem.png">
 <meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/example.png">
 <meta property="article:published_time" content="2022-01-16T09:32:48.000Z">
-<meta property="article:modified_time" content="2022-01-16T10:37:55.550Z">
+<meta property="article:modified_time" content="2022-01-16T10:41:58.180Z">
 <meta property="article:author" content="penguin-wwy">
 <meta property="article:tag" content="optimization">
 <meta property="article:tag" content="CPython">
@@ -266,9 +266,9 @@
             <h1 style="display: none">CPython Key-Sharing Dictionary优化</h1>
             
             <div class="markdown-body">
-              <h3 id="PEP-412-–-Key-Sharing-Dictionary"><a href="#PEP-412-–-Key-Sharing-Dictionary" class="headerlink" title="PEP 412 – Key-Sharing Dictionary"></a>PEP 412 – Key-Sharing Dictionary</h3><p><a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/">PEP-412</a>来自2012年， 提出了对 dict 实现的改变，允许保存<code>object</code>属性的 dict 与同一类别实例的其他属性字典共享key列表。这种称为**<a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/#id11">Split-Table dictionaries</a>**。</p>
+              <h3 id="PEP-412-–-Key-Sharing-Dictionary"><a href="#PEP-412-–-Key-Sharing-Dictionary" class="headerlink" title="PEP 412 – Key-Sharing Dictionary"></a>PEP 412 – Key-Sharing Dictionary</h3><p><a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/">PEP-412</a>来自2012年， 提出了对 dict 实现的改变，允许保存<code>object</code>属性的 dict 与同一类别实例的其他属性字典共享key列表。这种称为<a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/#id11">Split-Table dictionaries</a>。</p>
 <p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict.png" srcset="/img/loading.gif" lazyload></p>
-<p>与之相反的不共享key列表的称为**<a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/#id12">Combined-Table dictionaries</a><strong>。当创建一个对象的<code>__dict__</code>时，它们是以</strong>split<strong>的形式被创建的。键表被缓存在类型中，允许一个类的实例的所有属性字典共享键。如果这些字典的键开始出现分歧，那么就会从</strong>split<strong>模式转换为</strong>combine**模式。</p>
+<p>与之相反的不共享key列表的称为<a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/#id12">Combined-Table dictionaries</a>。当创建一个对象的<code>__dict__</code>时，它们是以<strong>split</strong>的形式被创建的。键表被缓存在类型中，允许一个类的实例的所有属性字典共享键。如果这些字典的键开始出现分歧，那么就会从<strong>split</strong>模式转换为<strong>combine</strong>模式。</p>
 <h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h4><p>通过将键（和哈希值）与值分开，就有可能在多个字典之间共享键，并改善内存的使用，这些字典的大小通常是当前字典实现的一半。</p>
 <p>基准测试表明，面向对象的程序的内存使用减少了10%到20%，其他程序的内存使用没有明显变化。</p>
 <h4 id="速度"><a href="#速度" class="headerlink" title="速度"></a>速度</h4><p>新的实现主要目的是内存优化。当键没有被共享时（例如在模块字典和由<code>dict()</code>创建的字典中），那么性能与当前的实现没有变化（在1~2%之内）。</p>
