@@ -4,6 +4,33 @@
   
   
   <entry>
+    <title>CPython Key-Sharing Dictionary优化</title>
+    <link href="/2022/01/16/shared-keys/"/>
+    <url>/2022/01/16/shared-keys/</url>
+    
+    <content type="html"><![CDATA[<h3 id="PEP-412-–-Key-Sharing-Dictionary"><a href="#PEP-412-–-Key-Sharing-Dictionary" class="headerlink" title="PEP 412 – Key-Sharing Dictionary"></a>PEP 412 – Key-Sharing Dictionary</h3><p><a href="https://www.python.org/dev/peps/pep-0412/">PEP-412</a>来自2012年， 提出了对 dict 实现的改变，允许保存<code>object</code>属性的 dict 与同一类别实例的其他属性字典共享key列表。这种称为**<a href="https://www.python.org/dev/peps/pep-0412/#id11">Split-Table dictionaries</a>**。</p><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict.png"></p><p>与之相反的不共享key列表的称为**<a href="https://www.python.org/dev/peps/pep-0412/#id12">Combined-Table dictionaries</a><strong>。当创建一个对象的<code>__dict__</code>时，它们是以</strong>split<strong>的形式被创建的。键表被缓存在类型中，允许一个类的实例的所有属性字典共享键。如果这些字典的键开始出现分歧，那么就会从</strong>split<strong>模式转换为</strong>combine**模式。</p><h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h4><p>通过将键（和哈希值）与值分开，就有可能在多个字典之间共享键，并改善内存的使用，这些字典的大小通常是当前字典实现的一半。</p><p>基准测试表明，面向对象的程序的内存使用减少了10%到20%，其他程序的内存使用没有明显变化。</p><h4 id="速度"><a href="#速度" class="headerlink" title="速度"></a>速度</h4><p>新的实现主要目的是内存优化。当键没有被共享时（例如在模块字典和由<code>dict()</code>创建的字典中），那么性能与当前的实现没有变化（在1~2%之内）。</p><p>对于共享键的情况，新的实现倾向于将键和值分开，但减少了总的内存使用。这在很多情况下会提高性能，因为减少内存使用的效果超过了局部性的损失，但有些程序可能会显示出小幅的减速。</p><p>基准测试显示，大多数基准测试的速度没有明显变化。面向对象的基准测试显示，当它们创建大量相同类别的对象时，速度会有小幅提升（gcbench基准测试显示有10%的速度提升，这可能是一个上限）。</p><h3 id="内存改善"><a href="#内存改善" class="headerlink" title="内存改善"></a>内存改善</h3><p><a href="https://bugs.python.org/issue27350">issue27350</a>，该issue对key列表的内存使用进行了进一步优化。这个优化来自PyPy的实现，<a href="https://morepypy.blogspot.com/2015/01/faster-more-memory-efficient-and-more.html">https://morepypy.blogspot.com/2015/01/faster-more-memory-efficient-and-more.html</a>。简单来说就是用一个数组来记录hash槽位，这样dict entry就可以紧凑的放到一起。entry的大小要大于表示位置信息的整型，从而起到节省空间的作用。</p><p>优化前：</p><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_o.png"></p><p>优化后：</p><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_mem.png"></p><h3 id="3-11进一步优化"><a href="#3-11进一步优化" class="headerlink" title="3.11进一步优化"></a>3.11进一步优化</h3><p>但是在issue27350加入之后产生了一个新的问题，就是当共享key的插入顺序不一致时，也需要转换为<strong>combine</strong>模式。例如：</p><div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python">a1 <span class="token operator">=</span> A<span class="token punctuation">(</span><span class="token punctuation">)</span>a2 <span class="token operator">=</span> A<span class="token punctuation">(</span><span class="token punctuation">)</span>a1<span class="token punctuation">.</span>field1 <span class="token operator">=</span> <span class="token number">1</span>a1<span class="token punctuation">.</span>field2 <span class="token operator">=</span> <span class="token number">2</span>a2<span class="token punctuation">.</span>field2 <span class="token operator">=</span> <span class="token number">2</span>a2<span class="token punctuation">.</span>field1 <span class="token operator">=</span> <span class="token number">1</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div><p>虽然<code>a1</code>和<code>a2</code>都是类型<code>A</code>且属性相同，但是由于插入顺序不一致，导致key列表的内存分布并不一致。</p><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/example.png"></p><p><code>a2</code>的<code>__dict__</code>就需要从<strong>split table</strong>变为<strong>combine table</strong>。</p><p><a href="https://bugs.python.org/issue40116">bpo-40116</a>解决了这个问题，在<code>split table</code>的<code>values</code>列表中同样插入了一个排序数组，扩展了<strong>split table</strong>的使用范围。</p><p><a href="https://github.com/python/cpython/blob/09087b8519316608b85131ee7455b664c00c38d2/Include/internal/pycore_dict.h#L102-L108">https://github.com/python/cpython/blob/09087b8519316608b85131ee7455b664c00c38d2/Include/internal/pycore_dict.h#L102-L108</a></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>Python</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>optimization</tag>
+      
+      <tag>CPython</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Lazy Basic Block Versioning续</title>
     <link href="/2022/01/13/lazy-bb-versioning2/"/>
     <url>/2022/01/13/lazy-bb-versioning2/</url>

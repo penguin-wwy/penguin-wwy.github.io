@@ -16,26 +16,27 @@
   <meta name="author" content="penguin-wwy">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Interprocedural Type Specialization of JavaScript Programs Without Type Analysis 来自ECOOP2016，是在Simple and Effective Type Check Removal through Lazy Basic Block Versioning基础上实现的，主要将BBV扩展到interprocedura">
+    <meta name="description" content="聊一下所知道的cpython dict结构的优化工作">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Lazy Basic Block Versioning续">
-<meta property="og:url" content="http://example.com/2022/01/13/lazy-bb-versioning2/index.html">
+<meta property="og:title" content="CPython Key-Sharing Dictionary优化">
+<meta property="og:url" content="http://example.com/2022/01/16/shared-keys/index.html">
 <meta property="og:site_name" content="懒得想标题">
-<meta property="og:description" content="Interprocedural Type Specialization of JavaScript Programs Without Type Analysis 来自ECOOP2016，是在Simple and Effective Type Check Removal through Lazy Basic Block Versioning基础上实现的，主要将BBV扩展到interprocedura">
+<meta property="og:description" content="聊一下所知道的cpython dict结构的优化工作">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-04-41.png">
-<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-11-24.png">
-<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-15-33.png">
-<meta property="article:published_time" content="2022-01-12T17:22:01.000Z">
-<meta property="article:modified_time" content="2022-01-12T17:33:06.756Z">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_o.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_mem.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/example.png">
+<meta property="article:published_time" content="2022-01-16T09:32:48.000Z">
+<meta property="article:modified_time" content="2022-01-16T10:37:55.550Z">
 <meta property="article:author" content="penguin-wwy">
 <meta property="article:tag" content="optimization">
-<meta property="article:tag" content="compiler">
+<meta property="article:tag" content="CPython">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-04-41.png">
+<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict.png">
   
   
-  <title>Lazy Basic Block Versioning续 - 懒得想标题</title>
+  <title>CPython Key-Sharing Dictionary优化 - 懒得想标题</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
 
@@ -203,7 +204,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="Lazy Basic Block Versioning续">
+            <span class="h2" id="subtitle" title="CPython Key-Sharing Dictionary优化">
               
             </span>
 
@@ -213,8 +214,8 @@
   
     <span class="post-meta">
       <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-      <time datetime="2022-01-13 01:22" pubdate>
-        2022年1月13日 凌晨
+      <time datetime="2022-01-16 17:32" pubdate>
+        2022年1月16日 下午
       </time>
     </span>
   
@@ -224,7 +225,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      2.6k 字
+      1.3k 字
     </span>
   
 
@@ -233,7 +234,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      22 分钟
+      11 分钟
     </span>
   
 
@@ -262,74 +263,35 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Lazy Basic Block Versioning续</h1>
+            <h1 style="display: none">CPython Key-Sharing Dictionary优化</h1>
             
             <div class="markdown-body">
-              <p><a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/c64954e9f91090537b13dfcd727aa76b612646ff">Interprocedural Type Specialization of JavaScript Programs Without Type Analysis</a> 来自ECOOP2016，是在Simple and Effective Type Check Removal through Lazy Basic Block Versioning基础上实现的，主要将BBV扩展到interprocedural。<span id="more"></span></p>
-<h3 id="Interprocedural-Basic-Block-Versioning"><a href="#Interprocedural-Basic-Block-Versioning" class="headerlink" title="Interprocedural Basic Block Versioning"></a>Interprocedural Basic Block Versioning</h3><h4 id="Type-Object-Shape"><a href="#Type-Object-Shape" class="headerlink" title="Type Object Shape"></a>Type Object Shape</h4><p>实现过程间BBV主要依赖以下两项：</p>
-<ul>
-<li><code>Type Object Shape</code>，因为在JS中，函数通常被存储在对象中，这包括对象方法和全局函数（JS将全局函数存储为全局对象的属性）。需要将类型标签附加到对象属性中，包括全局变量；</li>
-<li><code>Object Shapes and Shape Tests</code>，目前的商业JS引擎都有一个<strong>object shapes</strong>概念，与Self VM的属性图概念类似。对于任意对象都包含一个指向形状描述的指针，后者提供其内存布局：属性、属性的内存偏移量、属性标志(读写状态等)。而由于遍历这些属性的代价非常高昂，现代JS引擎会通过<strong>PICs(Polymorphic Inline Caches)<strong>来优化属性访问。通常情况下，通过</strong>shape tests</strong>来判断当前缓存是否适用，或者是否需要对PIC进行更新；</li>
-</ul>
-<p>将上述两项结合，实现——<code>Extending Shapes with Types</code>，即一旦通过<code>shape tests</code>确定某个layout之后，同时也获得了对应属性的类型。</p>
-<p>例如对于如下代码</p>
-<div class="code-wrapper"><pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">function</span> <span class="token function">sumList</span> <span class="token punctuation">(</span><span class="token parameter">lst</span> <span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
-	<span class="token keyword">if</span> <span class="token punctuation">(</span>lst <span class="token operator">==</span> <span class="token keyword">null</span> <span class="token punctuation">)</span>
-		<span class="token keyword">return</span> <span class="token number">0</span>
-	<span class="token keyword">return</span> lst<span class="token punctuation">.</span>val <span class="token operator">+</span> <span class="token function">sumList</span><span class="token punctuation">(</span>lst<span class="token punctuation">.</span>next <span class="token punctuation">)</span>
-<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+              <h3 id="PEP-412-–-Key-Sharing-Dictionary"><a href="#PEP-412-–-Key-Sharing-Dictionary" class="headerlink" title="PEP 412 – Key-Sharing Dictionary"></a>PEP 412 – Key-Sharing Dictionary</h3><p><a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/">PEP-412</a>来自2012年， 提出了对 dict 实现的改变，允许保存<code>object</code>属性的 dict 与同一类别实例的其他属性字典共享key列表。这种称为**<a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/#id11">Split-Table dictionaries</a>**。</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict.png" srcset="/img/loading.gif" lazyload></p>
+<p>与之相反的不共享key列表的称为**<a target="_blank" rel="noopener" href="https://www.python.org/dev/peps/pep-0412/#id12">Combined-Table dictionaries</a><strong>。当创建一个对象的<code>__dict__</code>时，它们是以</strong>split<strong>的形式被创建的。键表被缓存在类型中，允许一个类的实例的所有属性字典共享键。如果这些字典的键开始出现分歧，那么就会从</strong>split<strong>模式转换为</strong>combine**模式。</p>
+<h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h4><p>通过将键（和哈希值）与值分开，就有可能在多个字典之间共享键，并改善内存的使用，这些字典的大小通常是当前字典实现的一半。</p>
+<p>基准测试表明，面向对象的程序的内存使用减少了10%到20%，其他程序的内存使用没有明显变化。</p>
+<h4 id="速度"><a href="#速度" class="headerlink" title="速度"></a>速度</h4><p>新的实现主要目的是内存优化。当键没有被共享时（例如在模块字典和由<code>dict()</code>创建的字典中），那么性能与当前的实现没有变化（在1~2%之内）。</p>
+<p>对于共享键的情况，新的实现倾向于将键和值分开，但减少了总的内存使用。这在很多情况下会提高性能，因为减少内存使用的效果超过了局部性的损失，但有些程序可能会显示出小幅的减速。</p>
+<p>基准测试显示，大多数基准测试的速度没有明显变化。面向对象的基准测试显示，当它们创建大量相同类别的对象时，速度会有小幅提升（gcbench基准测试显示有10%的速度提升，这可能是一个上限）。</p>
+<h3 id="内存改善"><a href="#内存改善" class="headerlink" title="内存改善"></a>内存改善</h3><p><a target="_blank" rel="noopener" href="https://bugs.python.org/issue27350">issue27350</a>，该issue对key列表的内存使用进行了进一步优化。这个优化来自PyPy的实现，<a target="_blank" rel="noopener" href="https://morepypy.blogspot.com/2015/01/faster-more-memory-efficient-and-more.html">https://morepypy.blogspot.com/2015/01/faster-more-memory-efficient-and-more.html</a>。简单来说就是用一个数组来记录hash槽位，这样dict entry就可以紧凑的放到一起。entry的大小要大于表示位置信息的整型，从而起到节省空间的作用。</p>
+<p>优化前：</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_o.png" srcset="/img/loading.gif" lazyload></p>
+<p>优化后：</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/dict_mem.png" srcset="/img/loading.gif" lazyload></p>
+<h3 id="3-11进一步优化"><a href="#3-11进一步优化" class="headerlink" title="3.11进一步优化"></a>3.11进一步优化</h3><p>但是在issue27350加入之后产生了一个新的问题，就是当共享key的插入顺序不一致时，也需要转换为<strong>combine</strong>模式。例如：</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python">a1 <span class="token operator">=</span> A<span class="token punctuation">(</span><span class="token punctuation">)</span>
+a2 <span class="token operator">=</span> A<span class="token punctuation">(</span><span class="token punctuation">)</span>
+a1<span class="token punctuation">.</span>field1 <span class="token operator">=</span> <span class="token number">1</span>
+a1<span class="token punctuation">.</span>field2 <span class="token operator">=</span> <span class="token number">2</span>
+a2<span class="token punctuation">.</span>field2 <span class="token operator">=</span> <span class="token number">2</span>
+a2<span class="token punctuation">.</span>field1 <span class="token operator">=</span> <span class="token number">1</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
-<p>可以获得三个带有<code>type tag</code>的<code>object shape</code>，其中<code>G</code>表示全局对象：</p>
-<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; Linked list node shape
-S1: &#123; val: (slot 0, int32), next: (slot 1, null) &#125;
-S2: &#123; val: (slot 0, int32), next: (slot 1, object) &#125;
-&#x2F;&#x2F; Global object shape
-&#x2F;&#x2F; Closures have method identity information
-G: &#123;
-    ...,
-    Error: (slot 1, closure&#x2F;Error),
-    ...,
-    sumList: (slot 33, closure&#x2F;sumList),
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
-
-<p>可以获得如下CFG：</p>
-<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">A:	if is_null (lst) goto I:
-
-B: 	if not is_object (lst) goto stub1
-
-C: 	if not is_shape (lst , S1) goto C2
-	val &#x3D; read_slot (lst , 0) &#x2F;&#x2F; val is known to be int32
-	next &#x3D; read_slot (lst , 1) &#x2F;&#x2F; next is known to be null
-D: 	if not is_shape ( globalObj , G) goto stub2
-	sumfn &#x3D; read_slot ( globalObj , 33) &#x2F;&#x2F; sumfn is known to be a closure
-E: 	t1 &#x3D; sumfn ( next )
-	if not is_int32 (t1) goto stub3
-G: 	t2 &#x3D; add_int32 (val , t1)
-	if overflow goto stub4
-H: 	return t2
-
-I: 	return 0
-
-C2: if not is_shape (lst , S2) goto stub5
-	val &#x3D; read_slot (lst , 0) &#x2F;&#x2F; val is known to be int32
-	next &#x3D; read_slot (lst , 1) &#x2F;&#x2F; next is known to be object
-D2: if not is_shape ( globalObj , G) goto stub6
-	sumfn &#x3D; read_slot ( globalObj , 33) &#x2F;&#x2F; sumfn is known to be a closure
-E2: t1 &#x3D; sumfn ( next )
-	if not is_int32 (t1) goto stub7
-G2: t2 &#x3D; add_int32 (val , t1)
-	if overflow goto stub8
-H2: return t2<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
-
-<p>除了<code>type tag</code>之外，还可以附加函数签名信息，这样就可以在<code>callsite</code>上获取完整的<code>callee</code>。</p>
-<h4 id="Entry-Point-Versioning"><a href="#Entry-Point-Versioning" class="headerlink" title="Entry Point Versioning"></a>Entry Point Versioning</h4><p>当在一个<code>callsite</code>位置确定<code>callee</code>之后，同样也就可以确定<code>paramater</code>的类型，此时就可以在<code>callee</code>中生成<code>Entry Basic Block</code>的特化副本。在消除<code>callee</code>中多余的类型测试的同时，还可以在不对参数进行装箱的情况下传递参数，从而减少函数调用的开销。</p>
-<h4 id="Call-Continuation-Specialization"><a href="#Call-Continuation-Specialization" class="headerlink" title="Call Continuation Specialization"></a>Call Continuation Specialization</h4><p>对于<code>callsite</code>另一个问题是返回值类型的传播。对于任意<code>function</code>来说，它可能在程序的任意位置被调用。因此这必然是一个<code>context sensitive</code>的。但是对于JIT而言，可以使用<code>lazy</code>的方式来低成本地执行优化。也就是直到第一次在一个<code>callsite</code>位置返回时才针对返回值类型进行特化，而不是像<code>paramater</code>，当<code>callsite</code>位置的类型确定之后就可以生成对应的<code>machine code</code>。</p>
-<h3 id="Evaluation"><a href="#Evaluation" class="headerlink" title="Evaluation"></a>Evaluation</h3><h4 id="Type-Tests"><a href="#Type-Tests" class="headerlink" title="Type Tests"></a>Type Tests</h4><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-04-41.png" srcset="/img/loading.gif" lazyload></p>
-<p>上图是不同技术可消除的<code>type test</code>的比例。基础的过程内的BBV平均可以消除61%的test，加入<code>typed shapes</code>之后增加到79%，<code>entry spec</code>增加到89%，完全版本则达到94%。</p>
-<h4 id="Type-Analysis"><a href="#Type-Analysis" class="headerlink" title="Type Analysis"></a>Type Analysis</h4><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-11-24.png" srcset="/img/loading.gif" lazyload></p>
-<p>与<code>type analysis</code>对比。</p>
-<h4 id="Execution-time"><a href="#Execution-time" class="headerlink" title="Execution time"></a>Execution time</h4><p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-01-13-01-15-33.png" srcset="/img/loading.gif" lazyload></p>
-<h3 id="个人评价"><a href="#个人评价" class="headerlink" title="个人评价"></a>个人评价</h3><p>简单总结，核心是通过<strong>object shape</strong>来扩展BBV到过程间，实现全程序的优化，相对而言的代价要比<code>whole-program type analysis</code>的代价要小。</p>
+<p>虽然<code>a1</code>和<code>a2</code>都是类型<code>A</code>且属性相同，但是由于插入顺序不一致，导致key列表的内存分布并不一致。</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/example.png" srcset="/img/loading.gif" lazyload></p>
+<p><code>a2</code>的<code>__dict__</code>就需要从<strong>split table</strong>变为<strong>combine table</strong>。</p>
+<p><a target="_blank" rel="noopener" href="https://bugs.python.org/issue40116">bpo-40116</a>解决了这个问题，在<code>split table</code>的<code>values</code>列表中同样插入了一个排序数组，扩展了<strong>split table</strong>的使用范围。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/python/cpython/blob/09087b8519316608b85131ee7455b664c00c38d2/Include/internal/pycore_dict.h#L102-L108">https://github.com/python/cpython/blob/09087b8519316608b85131ee7455b664c00c38d2/Include/internal/pycore_dict.h#L102-L108</a></p>
 
             </div>
             <hr>
@@ -339,7 +301,7 @@ H2: return t2<span aria-hidden="true" class="line-numbers-rows"><span></span><sp
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/categories/paper%E9%98%85%E8%AF%BB/">paper阅读</a>
+                      <a class="hover-with-bg" href="/categories/Python/">Python</a>
                     
                   </div>
                 
@@ -349,7 +311,7 @@ H2: return t2<span aria-hidden="true" class="line-numbers-rows"><span></span><sp
                     
                       <a class="hover-with-bg" href="/tags/optimization/">optimization</a>
                     
-                      <a class="hover-with-bg" href="/tags/compiler/">compiler</a>
+                      <a class="hover-with-bg" href="/tags/CPython/">CPython</a>
                     
                   </div>
                 
@@ -366,18 +328,12 @@ H2: return t2<span aria-hidden="true" class="line-numbers-rows"><span></span><sp
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/01/16/shared-keys/">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">CPython Key-Sharing Dictionary优化</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2022/01/03/lazy-bb-versioning/">
-                        <span class="hidden-mobile">Lazy Basic Block Versioning</span>
+                      <a href="/2022/01/13/lazy-bb-versioning2/">
+                        <span class="hidden-mobile">Lazy Basic Block Versioning续</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
