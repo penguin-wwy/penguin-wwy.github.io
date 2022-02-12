@@ -18,22 +18,25 @@
   <meta name="author" content="penguin-wwy">
   <meta name="keywords" content="">
   
-    <meta name="description" content="远端借助nodemon以调试模式启动ts-node">
+    <meta name="description" content="Rethinking Incremental and Parallel Pointer Analysis来自TOPLAS，介绍了一种增量的可并行的指针分析算法。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Typescript remote debug">
-<meta property="og:url" content="http://example.com/2018/12/24/Typescript-remote-debug/index.html">
+<meta property="og:title" content="Rethinking Incremental and Parallel Pointer Analysis">
+<meta property="og:url" content="http://example.com/2022/02/13/inc-pta/index.html">
 <meta property="og:site_name" content="懒得想标题">
-<meta property="og:description" content="远端借助nodemon以调试模式启动ts-node">
+<meta property="og:description" content="Rethinking Incremental and Parallel Pointer Analysis来自TOPLAS，介绍了一种增量的可并行的指针分析算法。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2018-12-23T17:07:15.000Z">
-<meta property="article:modified_time" content="2021-12-15T17:53:51.077Z">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-42-25.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-44-46.png">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-45-38.png">
+<meta property="article:published_time" content="2022-02-12T19:33:48.000Z">
+<meta property="article:modified_time" content="2022-02-12T19:51:03.668Z">
 <meta property="article:author" content="penguin-wwy">
-<meta property="article:tag" content="Debug">
-<meta property="article:tag" content="Typescript">
+<meta property="article:tag" content="static analysis">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-42-25.png">
   
   
-  <title>Typescript remote debug - 懒得想标题</title>
+  <title>Rethinking Incremental and Parallel Pointer Analysis - 懒得想标题</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
 
@@ -201,7 +204,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="Typescript remote debug">
+            <span class="h2" id="subtitle" title="Rethinking Incremental and Parallel Pointer Analysis">
               
             </span>
 
@@ -211,8 +214,8 @@
   
     <span class="post-meta">
       <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-      <time datetime="2018-12-24 01:07" pubdate>
-        2018年12月24日 凌晨
+      <time datetime="2022-02-13 03:33" pubdate>
+        2022年2月13日 凌晨
       </time>
     </span>
   
@@ -222,7 +225,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      478 字
+      3.2k 字
     </span>
   
 
@@ -231,7 +234,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      4 分钟
+      27 分钟
     </span>
   
 
@@ -260,26 +263,77 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Typescript remote debug</h1>
+            <h1 style="display: none">Rethinking Incremental and Parallel Pointer Analysis</h1>
             
             <div class="markdown-body">
-              <p>远端借助nodemon以调试模式启动ts-node</p>
-<span id="more"></span>
+              <p><a target="_blank" rel="noopener" href="https://dl.acm.org/doi/pdf/10.1145/3293606">Rethinking Incremental and Parallel Pointer Analysis</a>来自TOPLAS，介绍了一种增量的可并行的指针分析算法。<span id="more"></span></p>
+<h3 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h3><p>本文介绍了基于<code>Andersen’s Analysis</code>实现的增量指针分析算法。</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">1 Δ1 ← ∅;&#x2F;&#x2F; Δ1: the new points-to constraints in each iteration
+2 Δ2 ← initial method call targets;
+3 while Δ2   ∅ do &#x2F;&#x2F; repeat until Δ2 is empty
+4 	Δ1 &#x3D; extractNewMethodCallConstraints(Δ2)
+5 	Δ2 &#x3D; runAndersensAnalysis(Δ1)
+6 end<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
 
-<p>配置如下</p>
-<p>package.json</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs json">&#123;<br>   <span class="hljs-attr">&quot;scripts&quot;</span>: &#123;<br>      <span class="hljs-attr">&quot;start:debug&quot;</span>: <span class="hljs-string">&quot;nodemon --config nodemon-debug.json&quot;</span>,<br>   &#125;,<br>&#125;<br></code></pre></td></tr></table></figure>
-
-<p>nodemon-debug.json</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs json">&#123;<br>  <span class="hljs-attr">&quot;watch&quot;</span>: [<br>    <span class="hljs-string">&quot;src&quot;</span><br>  ],<br>  <span class="hljs-attr">&quot;ext&quot;</span>: <span class="hljs-string">&quot;ts&quot;</span>,<br>  <span class="hljs-attr">&quot;ignore&quot;</span>: [<span class="hljs-string">&quot;src/**/*.spec.ts&quot;</span>],<br>  <span class="hljs-attr">&quot;exec&quot;</span>: <span class="hljs-string">&quot;node --inspect=0.0.0.0 --require ts-node/register src/main.ts&quot;</span><br>&#125;<br></code></pre></td></tr></table></figure>
-
-<p>compilerOptions中添加</p>
-<figure class="highlight actionscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs actionscript"><span class="hljs-string">&quot;inlineSourceMap&quot;</span>: <span class="hljs-literal">true</span>,<br></code></pre></td></tr></table></figure>
-
-<p>然后执行</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">npm run start:debug<br></code></pre></td></tr></table></figure>
-
-<p>即可</p>
+<p>代码的变化总是可以用插入（<code>insertion</code>）和删除（<code>deletion</code>）两种动作来表示。</p>
+<p>对于现实世界的代码，<code>Andersen</code>分析可以动态的构建PAG（Pointer Assignment Graph）。那么这种动态构建结果的能力可以直接作用于<code>insertion</code>，即提取新增代码对于指针分析的作用，然后重新执行<code>on-the-fly algorithm</code>进行计算。</p>
+<p>而对于<code>deletion</code>的处理则要复杂许多。需要维护出处信息，用于在语句被删除是，做出对应的变更。</p>
+<p>现有的应对<code>deletion</code>的处理方法基本可以分为两类：</p>
+<ul>
+<li><code>reset-recompute</code>，例如：<ul>
+<li>ICSE ‘14: <a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/1463e576135cdc331ede7a31caf830b76ba5bacd">Reviser: efficiently updating IDE-/IFDS-based data-flow analyses in response to incremental program changes</a></li>
+<li>PPDP ‘05: <a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/041dabfd575628ee46b300d1c6ead8346b5c35c9">Incremental and demand-driven points-to analysis using logic programming</a></li>
+</ul>
+</li>
+<li><code>reachability based</code>，例如：<ul>
+<li>CC ‘13: <a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/6be56b6140bc7dcc1388622796e4806b78ff592c">An Incremental Points-to Analysis with CFL-Reachability</a></li>
+<li>ASE ‘12: <a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/fe9f9e3d983c0ebba5d640f230e2bd533e60522e">Fast and precise points-to analysis with incremental CFL-reachability summarisation: preliminary experience</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="Reset-Recompute-Algorithm"><a href="#Reset-Recompute-Algorithm" class="headerlink" title="Reset-Recompute Algorithm"></a>Reset-Recompute Algorithm</h4><p>最直接的思路就是当发生删除操作时，对<strong>关联</strong>变量的<code>points-to set</code>进行重置和重算，所谓<strong>关联</strong>就是在PAG上从被删除的根节点出发可达的节点。该方法的问题在于对于需要重置节点的计算大多数情况下可能是冗余的，导致效率不高。</p>
+<p>此外针对这种算法发展出了基于IDE/IFDS框架的优化和基于Graph-Pattern的优化方法。</p>
+<h4 id="Reachability-Based-Algorithm"><a href="#Reachability-Based-Algorithm" class="headerlink" title="Reachability-Based Algorithm"></a>Reachability-Based Algorithm</h4><p>该做法突出一个<strong>updated lazily</strong>的概念，可能受到删除影响的节点不会立刻被重置，当切仅当它们不能从删除的语句所表示的相应内存对象可达时才会被更新。这种做法同样相当费时，可达性计算的成本会随着PAG图的规模而增加。</p>
+<h3 id="New-Incremental-Algorithm"><a href="#New-Incremental-Algorithm" class="headerlink" title="New Incremental Algorithm"></a>New Incremental Algorithm</h3><p>新的算法通过识别哪些是当<code>deletion</code>发生时，哪些PAG中的节点需要被更新，并及时停止更新的传递来减少冗余计算，同时证明了实现并行的可能。</p>
+<p>首先需要通过Strongly Connected Components（SCC）优化实现PAG中的去环。因为对于SCC中的节点，<code>points-to set</code>是无效的，那么它们可以塌缩成一个单独的节点，以此保证PAG中无环。</p>
+<p>在一个无环的PAG中，可以得到以下两个性质</p>
+<blockquote>
+<p>Lemma 1 [Incoming Neighbors Property]. Consider an acyclic PAG and a pointer node q of which an object o ∈ pts (q). If q has an incoming neighbor r (that is, there exists an edge r →q) and o ∈ pts (r ), then there must exist a path from o to r without going through q.</p>
+</blockquote>
+<p>这条可以推导出，当对象<code>O</code>属于<code>Q</code>的指向集合，如果删除一条从<code>Q</code>指向<code>P</code>的边，如果<code>P</code>的其他<code>incoming neighbor</code>不包含对象<code>O</code>，那么<code>O</code>可以从<code>P</code>的指向集中删除。这说明当某条边被删除时，我们只需要check这条边终点的<code>incoming neighbor</code></p>
+<blockquote>
+<p>Lemma 2 [Outgoing Neighbors Property]. Consider an acyclic PAG and a pointer node q of which an object o ∈ pts (q). Assume that q has an outgoing neighbor w (i.e., there exists an edge q → w) and w has an incoming neighbor r (different from q) such that o ∈ pts (r ). If r cannot reach q, then at least one of the following two conditions (or both) must hold in the PAG:</p>
+<p>(1) There exists a path from o to w without going through q.</p>
+<p>(2) There exists a path from q to r .</p>
+</blockquote>
+<p>即对于<code>p -&gt; q -&gt; w</code>的情况，如果删除<code>p-&gt;q</code>并且<code>o</code>从<code>q</code>的指向集中删除，那么对于作为<code>q</code>的<code>outgoing neighbors</code>的<code>w</code>而言，需要检查它的<code>incoming neighbors</code>，如果<code>incoming neighbors</code>的指向集中仍然含有<code>o</code>，那么传播终止。</p>
+<p>基于上述结论，设计了新的算法来增量处理<code>deletion</code>的情况。</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-42-25.png" srcset="/img/loading.gif" lazyload></p>
+<p>举例说明，PAG如下图所示，当删除掉<code>x -&gt; y</code>这条边：</p>
+<ul>
+<li>由于<code>y</code>的其他入度不包含<code>o1</code>，所以<code>o1</code>可以从<code>y</code>的指向集中删除（Lemma 1）；</li>
+<li>继续考察<code>y</code>的出度：<ul>
+<li>对于<code>z</code>，由于<code>z</code>的其他入度同样不包含<code>o1</code>，所以同样删除；</li>
+<li>对于<code>w</code>，存在一条<code>o1 -&gt; x -&gt; w </code>的路径，所以这个修改会被跳过，并且终止传播（Lemma 2）；</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-44-46.png" srcset="/img/loading.gif" lazyload></p>
+<h4 id="Parallel"><a href="#Parallel" class="headerlink" title="Parallel"></a>Parallel</h4><blockquote>
+<p>Lemma 3 [Change Idempotency Property]. For an edge insertion or deletion, the update to each points-to set is an idempotent operator. In other words, if the change propagates to a node more than once from different paths, the effect of the change (i.e., the modification applied to the corresponding points-to set) must be the same.</p>
+</blockquote>
+<p>这条性质类似于幂等性？！这保证了对于一个修改的不同路径进行并行化传播，并不会发生冲突，如下图：</p>
+<p><img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/2022-02-13-03-45-38.png" srcset="/img/loading.gif" lazyload></p>
+<p>无论路径一或路径二的先后顺序如何，都不会影响最终的结果。</p>
+<h3 id="DISCUSSIONS"><a href="#DISCUSSIONS" class="headerlink" title="DISCUSSIONS"></a>DISCUSSIONS</h3><ul>
+<li>Flow sensitivity</li>
+</ul>
+<p>没有选择flow-sensitivity的原因在于，需要同时维护control-flow的变化，而control-flow和data-flow的分析并不是正交的，特别是高精度的control-flow graph和points-to analysis通常是相互递归的。</p>
+<ul>
+<li>Context sensitivity</li>
+</ul>
+<p>由于对于context而言PAG中edge的增加和删除都是正交的，所以完全可以改造成上下文敏感分析。</p>
+<p>图片数据、伪代码来源 <a target="_blank" rel="noopener" href="https://dl.acm.org/doi/pdf/10.1145/3293606">Rethinking Incremental and Parallel Pointer Analysis</a></p>
 
             </div>
             <hr>
@@ -289,7 +343,7 @@
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/categories/Other/">Other</a>
+                      <a class="hover-with-bg" href="/categories/paper%E9%98%85%E8%AF%BB/">paper阅读</a>
                     
                   </div>
                 
@@ -297,9 +351,7 @@
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/tags/Debug/">Debug</a>
-                    
-                      <a class="hover-with-bg" href="/tags/Typescript/">Typescript</a>
+                      <a class="hover-with-bg" href="/tags/static-analysis/">static analysis</a>
                     
                   </div>
                 
@@ -316,18 +368,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2019/06/19/try_with_resources/">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">关于try-with-resources不知道的事</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2018/04/14/LLVM-Pass-add-process/">
-                        <span class="hidden-mobile">LLVM Pass从添加到执行的过程</span>
+                      <a href="/2022/01/16/shared-keys/">
+                        <span class="hidden-mobile">CPython Key-Sharing Dictionary优化</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
