@@ -1,0 +1,672 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="ECOOP09，PyPy JIT设计的第一篇，某种意义上算是meta-tracing的开山之作！？（大概，不是很确定）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tracing the meta-level:\ PyPy&#39;s tracing JIT compiler">
+<meta property="og:url" content="http://example.com/2022/02/20/meta-level-tracing/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="ECOOP09，PyPy JIT设计的第一篇，某种意义上算是meta-tracing的开山之作！？（大概，不是很确定）">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/image-20220222013439948.png">
+<meta property="article:published_time" content="2022-02-19T18:20:33.000Z">
+<meta property="article:modified_time" content="2022-02-21T18:29:32.097Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="optimization">
+<meta property="article:tag" content="compiler">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/image-20220222013439948.png">
+  
+  
+  <title>Tracing the meta-level:\ PyPy&#39;s tracing JIT compiler - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      
+        
+          
+          
+          
+        
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-solarizedlight.min.css" />
+      
+      
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.css" />
+      
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Tracing the meta-level:\ PyPy&#39;s tracing JIT compiler">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-02-20 02:20" pubdate>
+        2022年2月20日 凌晨
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.2k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      36 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Tracing the meta-level:\ PyPy&#39;s tracing JIT compiler</h1>
+            
+            <div class="markdown-body">
+              <h3 id="ABSTRACT"><a href="#ABSTRACT" class="headerlink" title="ABSTRACT"></a>ABSTRACT</h3><p>PyPy Meta-Tracing JIT的一个目标是简化动态语言高性能实现的方法。</p>
+<p>PyPy项目一直以——总体上简化动态语言实现方法——为目标。它一开始是用RPython实现Python解释器，之后对实现其他动态语言也很有用。一般的方法是在Python的一个子集上实现一个语言解释器，这个子集可以被编译成各种目标环境，如ASC/POSIX、CLI或JVM。</p>
+<p>许多动态语言使用字节码解释器，但是却没有更高级的即时编译技术。造成这种情况的原因有很多，其中大部分归结为使用编译的固有复杂性。解释器易于实现、理解、扩展和移植，而编写即时编译器是一项容易出错的任务，语言的动态特性使其更加困难。</p>
+<p>编写基于Trace的JIT编译器则相对简单。它可以被添加到一种语言的现有解释器中，解释器接管了编译器的一些功能，机器代码生成部分可以得到简化。</p>
+<p>在本文中，讨论了PyPy项目借助PyPy工具链提升的解释器性能的工作，也就是JIT。</p>
+<p>与当前存在的动态语言Tracing JIT不同，PyPy所Trace的是“下一级”，即它跟踪解释器的执行，而不是用户程序的执行。</p>
+<img src="https://sz-1254760981.cos.ap-chengdu.myqcloud.com/image-20220222013439948.png" srcset="/img/loading.gif" lazyload  />
+
+<p>本文的核心贡献有两点：</p>
+<ul>
+<li>Applying a tracing JIT compiler to an interpreter.</li>
+<li>Finding techniques for improving the generated code.</li>
+</ul>
+<h3 id="Tracing-JIT"><a href="#Tracing-JIT" class="headerlink" title="Tracing JIT"></a>Tracing JIT</h3><p>首先考察一下Tracing JIT的相关内容。</p>
+<p>对于动态语言的性能提升，tracing JIT是一个很不错的思路，它基于以下两个基本假设：</p>
+<ul>
+<li>programs spend most of their runtime in loops</li>
+<li>several iterations of the same loop are likely to takesimilar code paths</li>
+</ul>
+<p>Trace JIT基于解释器在执行过程中通过轻量级的profiling，定位到用户代码的热路径（比如循环），解释器进入<code>trace mode</code>，在该模式下会跟踪记录足够的执行信息。这些跟踪获得的信息会用于生成高性能的机器代码，在下一次进入热路径的时候执行。</p>
+<p>这种跟踪是连续的，它只表示代码的许多可能路径中的一条。为了确保正确性，路径其他方向上都包含一个保护（guard），例如在条件和间接或虚拟调用时。在生成机器代码时，每个<strong>guard</strong>都被转换某种快速检查，以保证我们正在执行的路径仍然有效，如果检查失败，会立即退出机器代码，并通过回退到解释来继续执行（Deoptimize）。</p>
+<p>最重要的点在于解释器如何识别loop，即跟踪器如何识别它到目前为止记录的轨迹对应于一个循环。</p>
+<p>这依赖于某种<strong>position key</strong>：如果该位置处之前已经被执行过一次。跟踪器不需要一直检查是否是<strong>position key</strong>，而只需要后向跳转时检查是否已经途径过该点（例如，反向分支指令）。注意，在正常解释执行期间，它们是执行剖析的地方（定位循环）；在跟踪期间，它们是执行闭合循环检查的地方。</p>
+<h3 id="Applying-a-Tracing-JIT-to-an-Interpreter"><a href="#Applying-a-Tracing-JIT-to-an-Interpreter" class="headerlink" title="Applying a Tracing JIT to an Interpreter"></a>Applying a Tracing JIT to an Interpreter</h3><h4 id="Unrolling-the-bytecode-dispatch-loop"><a href="#Unrolling-the-bytecode-dispatch-loop" class="headerlink" title="Unrolling the bytecode dispatch loop"></a>Unrolling the bytecode dispatch loop</h4><p>在简单了解Tracing JIT之后，考察PyPy所实现的Meta-level tracing JIT。</p>
+<p>如前所述，PyPy跟踪的内容并不是用户程序执行的过程，而是解释器的执行过程（Meta-Level）。</p>
+<p>对解释器而言，最重要的热循环是字节码分派循环(对于许多简单的解释器来说，它也是唯一的热循环)。此循环的一次迭代对应于一个操作码的执行。</p>
+<p>这意味着Tracing JIT所做的假设之一是错误的——热循环的几次迭代并不能保证相似的代码路径。</p>
+<p>为了优化这种情况，JIT就不能以单一执行的分派过程作为基准开始优化，它需要跟踪多条opcode的执行情况，这本质上类似于<strong>unrolling the bytecode dispatch loop</strong>。</p>
+<p>理想情况下，字节码分派循环应该完全展开，并从中可以找到相对应的用户代码循环（当语言解释器的程序计数器几次具有相同的值时，就会出现用户循环）。和语言解释器类似，跟踪器，程序计数器出现相同的情况，意味着发现一个闭合的循环。不过对于跟踪器来说，这需要解释器协助完成。</p>
+<p>这里对于language-interpreter的trace在概念上是由tracing interpreter完成的（因为RPython也是一种运行在解释器上的解释型语言，所以它的trace工作可以由本身的解释器替代），这里就形成了所谓的双解释器结构。</p>
+<h4 id="Improving-the-Result"><a href="#Improving-the-Result" class="headerlink" title="Improving the Result"></a>Improving the Result</h4><p>之后便是对展开之后的执行序列进行优化，不过这篇论文里优化内容讲的并不多，简单提了下类似常量折叠之类的。</p>
+<p>有个例子简单演示一下全过程。</p>
+<p>首先是解释器代码：</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">interpret</span><span class="token punctuation">(</span>bytecode<span class="token punctuation">,</span> a<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    regs <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">*</span> <span class="token number">256</span>
+    pc <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+        opcode <span class="token operator">=</span> <span class="token builtin">ord</span><span class="token punctuation">(</span>bytecode<span class="token punctuation">[</span>pc<span class="token punctuation">]</span><span class="token punctuation">)</span>
+        pc <span class="token operator">+=</span> <span class="token number">1</span>
+        <span class="token keyword">if</span> opcode <span class="token operator">==</span> JUMP_IF_A<span class="token punctuation">:</span>
+            target <span class="token operator">=</span> <span class="token builtin">ord</span><span class="token punctuation">(</span>bytecode<span class="token punctuation">[</span>pc<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            pc <span class="token operator">+=</span> <span class="token number">1</span>
+            <span class="token keyword">if</span> a<span class="token punctuation">:</span>
+                pc <span class="token operator">=</span> target
+        <span class="token keyword">elif</span> opcode <span class="token operator">==</span> MOV_A_R<span class="token punctuation">:</span>
+            n <span class="token operator">=</span> <span class="token builtin">ord</span><span class="token punctuation">(</span>bytecode<span class="token punctuation">[</span>pc<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            pc <span class="token operator">+=</span> <span class="token number">1</span>
+            regs<span class="token punctuation">[</span>n<span class="token punctuation">]</span> <span class="token operator">=</span> a
+        <span class="token keyword">elif</span> opcode <span class="token operator">==</span> MOV_R_A<span class="token punctuation">:</span>
+            n <span class="token operator">=</span> <span class="token builtin">ord</span><span class="token punctuation">(</span>bytecode<span class="token punctuation">[</span>pc<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            pc <span class="token operator">+=</span> <span class="token number">1</span>
+            a <span class="token operator">=</span> regs<span class="token punctuation">[</span>n<span class="token punctuation">]</span>
+        <span class="token keyword">elif</span> opcode <span class="token operator">==</span> ADD_R_TO_A<span class="token punctuation">:</span>
+            n <span class="token operator">=</span> <span class="token builtin">ord</span><span class="token punctuation">(</span>bytecode<span class="token punctuation">[</span>pc<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            pc <span class="token operator">+=</span> <span class="token number">1</span>
+            a <span class="token operator">+=</span> regs<span class="token punctuation">[</span>n<span class="token punctuation">]</span>
+        <span class="token keyword">elif</span> opcode <span class="token operator">==</span> DECR_A<span class="token punctuation">:</span>
+            a <span class="token operator">-=</span> <span class="token number">1</span>
+        <span class="token keyword">elif</span> opcode <span class="token operator">==</span> RETURN_A<span class="token punctuation">:</span>
+            <span class="token keyword">return</span> a<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>输入程序：</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">MOV_A_R 0 # i &#x3D; a
+MOV_A_R 1 # copy of &#39;a&#39;
+# 4:
+MOV_R_A 0 # i--
+DECR_A
+MOV_A_R 0
+MOV_R_A 2 # res +&#x3D; a
+ADD_R_TO_A 1
+MOV_A_R 2
+MOV_R_A 0 # if i!&#x3D;0: goto 4
+JUMP_IF_A 4
+MOV_R_A 2 # return res
+RETURN_A<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>跟踪生成的执行序列：</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">loop_start(a0, regs0, bytecode0, pc0)
+# MOV_R_A 0
+opcode0 &#x3D; strgetitem(bytecode0, pc0)
+pc1 &#x3D; int_add(pc0, Const(1))
+guard_value(opcode0, Const(2))
+n1 &#x3D; strgetitem(bytecode0, pc1)
+pc2 &#x3D; int_add(pc1, Const(1))
+a1 &#x3D; list_getitem(regs0, n1)
+# DECR_A
+opcode1 &#x3D; strgetitem(bytecode0, pc2)
+pc3 &#x3D; int_add(pc2, Const(1))
+guard_value(opcode1, Const(7))
+a2 &#x3D; int_sub(a1, Const(1))
+# MOV_A_R 0
+opcode1 &#x3D; strgetitem(bytecode0, pc3)
+pc4 &#x3D; int_add(pc3, Const(1))
+guard_value(opcode1, Const(1))
+n2 &#x3D; strgetitem(bytecode0, pc4)
+pc5 &#x3D; int_add(pc4, Const(1))
+list_setitem(regs0, n2, a2)
+# MOV_R_A 2
+...
+# ADD_R_TO_A 1
+opcode3 &#x3D; strgetitem(bytecode0, pc7)
+pc8 &#x3D; int_add(pc7, Const(1))
+guard_value(opcode3, Const(5))
+n4 &#x3D; strgetitem(bytecode0, pc8)
+pc9 &#x3D; int_add(pc8, Const(1))
+i0 &#x3D; list_getitem(regs0, n4)
+a4 &#x3D; int_add(a3, i0)
+# MOV_A_R 2
+...
+# MOV_R_A 0
+...
+# JUMP_IF_A 4
+opcode6 &#x3D; strgetitem(bytecode0, pc13)
+pc14 &#x3D; int_add(pc13, Const(1))
+guard_value(opcode6, Const(3))
+target0 &#x3D; strgetitem(bytecode0, pc14)
+pc15 &#x3D; int_add(pc14, Const(1))
+i1 &#x3D; int_is_true(a5)
+guard_true(i1)
+jump(a5, regs0, bytecode0, target0)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>优化之后</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">loop_start(a0, regs0)
+# MOV_R_A 0
+a1 &#x3D; list_getitem(regs0, Const(0))
+# DECR_A
+a2 &#x3D; int_sub(a1, Const(1))
+# MOV_A_R 0
+list_setitem(regs0, Const(0), a2)
+# MOV_R_A 2
+a3 &#x3D; list_getitem(regs0, Const(2))
+# ADD_R_TO_A 1
+i0 &#x3D; list_getitem(regs0, Const(1))
+a4 &#x3D; int_add(a3, i0)
+# MOV_A_R 2
+list_setitem(regs0, Const(2), a4)
+# MOV_R_A 0
+a5 &#x3D; list_getitem(regs0, Const(0))
+# JUMP_IF_A 4
+i1 &#x3D; int_is_true(a5)
+guard_true(i1)
+jump(a5, regs0)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+
+
+<h3 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h3><p>内容上没有太多值得关注的细节，有几点总结一下：</p>
+<ul>
+<li>首先是对于Tracing JIT的论述，特别是循环识别、闭合；</li>
+<li>其次Meta-Level层面上的实现方法；</li>
+<li>在实现上有两点需要注意，<ul>
+<li>PyPy本身的工具链会将RPython编译到C，所以生成的Interpreter本身就是Execution，论文中所谓的tracing-interpreter更多是对应于概念，实现时可以看做就是对C-interpreter的profiling；</li>
+<li>同样需要oSR来做deopt的保障，而这本质是上双重解释器的实现机制上存在巨大差异，所需要的执行流、数据结构完全不同；</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/paper%E9%98%85%E8%AF%BB/">paper阅读</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/optimization/">optimization</a>
+                    
+                      <a class="hover-with-bg" href="/tags/compiler/">compiler</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/02/13/inc-pta/">
+                        <span class="hidden-mobile">Rethinking Incremental and Parallel Pointer Analysis</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+              <!-- Comments -->
+              <article class="comments" id="comments" lazyload>
+                
+                  
+                
+                
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#comments', function() {
+      var light = 'github-light';
+      var dark = 'github-dark';
+      var schema = document.documentElement.getAttribute('data-user-color-scheme');
+      if (schema === 'dark') {
+        schema = dark;
+      } else {
+        schema = light;
+      }
+      window.UtterancesThemeLight = light;
+      window.UtterancesThemeDark = dark;
+      var s = document.createElement('script');
+      s.setAttribute('src', 'https://utteranc.es/client.js');
+      s.setAttribute('repo', 'penguin-wwy/gitment');
+      s.setAttribute('issue-term', 'url');
+      
+      s.setAttribute('label', 'utterances');
+      
+      s.setAttribute('theme', schema);
+      s.setAttribute('crossorigin', 'anonymous');
+      document.getElementById('comments').appendChild(s);
+    })
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+              </article>
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+  <!-- 备案信息 -->
+  <div class="beian">
+    <span>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow noopener">
+        京ICP备17069049号-1
+      </a>
+    </span>
+    
+  </div>
+
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+    
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
