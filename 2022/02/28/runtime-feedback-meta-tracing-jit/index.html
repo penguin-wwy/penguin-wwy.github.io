@@ -1,0 +1,630 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="ECOOP2011，meta-tracing jit通过运行时信息优化object model，核心在于promotion实现的constant fold和operation fold，以及它们的结合体。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Runtime feedback in a meta-tracing JIT for efficient dynamic languages">
+<meta property="og:url" content="http://example.com/2022/02/28/runtime-feedback-meta-tracing-jit/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="ECOOP2011，meta-tracing jit通过运行时信息优化object model，核心在于promotion实现的constant fold和operation fold，以及它们的结合体。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-02-28T15:25:09.000Z">
+<meta property="article:modified_time" content="2022-02-28T15:29:44.886Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="optimization">
+<meta property="article:tag" content="compiler">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>Runtime feedback in a meta-tracing JIT for efficient dynamic languages - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      
+        
+          
+          
+          
+        
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-solarizedlight.min.css" />
+      
+      
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.css" />
+      
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Runtime feedback in a meta-tracing JIT for efficient dynamic languages">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-02-28 23:25" pubdate>
+        2022年2月28日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.1k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      26 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Runtime feedback in a meta-tracing JIT for efficient dynamic languages</h1>
+            
+            <div class="markdown-body">
+              <h3 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h3><p>对于面向对象的动态语言，最困难的部分之一就是优化其对象模型。Meta-Tracing JIT为实现动态语言的语言解释器提供Tracing JIT，而不是为动态语言本身提供跟踪JIT，这使得对象模型对于跟踪器及其优化是透明的，动态语言的语义不必在JIT中复制实现。同时，允许在动态语言实现中使用一些注解来指导Meta-Tracing，该过程不是完全自动的，但可以有很好的加速效果。这篇主要就是说明两个在PyPy项目中广泛使用的注解，以改进Python解释器的性能，特别是对象模型的性能。</p>
+<p>核心思路就是对于变化非常慢的值（读多写少），使用动态编译可以在运行时观察到的具体值并利用它们。具体地说，如果存在，则可以编译同一代码的多个专用版本，每个实际值对应一个版本。</p>
+<ul>
+<li>A hint to turn arbitrary variables into constants in the trace byfeeding back runtime information into compilation.</li>
+<li>A way to annotate operations which the constant folding opti-mization then recognizes and exploits.</li>
+<li>A worked-out example of a simple object model of a dynamiclanguage and how it can be improved using these hints.</li>
+<li>This example also exemplifies general techniques for refactor-ing code to expose constant folding opportunities of likely run-time constants.</li>
+</ul>
+<h3 id="Hints-for-Controlling-Optimization"><a href="#Hints-for-Controlling-Optimization" class="headerlink" title="Hints for Controlling Optimization"></a>Hints for Controlling Optimization</h3><p>本文的核心介绍两种提示（<code>hint</code>），用于加速执行。如果应用得当，这些技术可以通过预计算部分运行时发生的事情来实现真正的加速，否则会陷入<code>slow path</code>，带来更高的成本。</p>
+<h4 id="Constant-fold"><a href="#Constant-fold" class="headerlink" title="Constant fold"></a>Constant fold</h4><p>一种是针对变量的<code>promotion</code>行为，用于在范围更广的代码路径上进行常量折叠的优化。</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">f1</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">:</span>
+	z <span class="token operator">=</span> x <span class="token operator">*</span> <span class="token number">2</span> <span class="token operator">+</span> <span class="token number">1</span>
+	<span class="token keyword">return</span> z <span class="token operator">+</span> y
+
+<span class="token comment"># trace code</span>
+<span class="token triple-quoted-string string">"""
+v1 = x1 * 2
+z1 = v1 + 1
+v2 = z1 + y1
+return(v2)
+"""</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>如果通过观察发现入参<code>x</code>总是很少变化，我们可以添加一个提示来提升x</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">f1</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">:</span>
+	promote<span class="token punctuation">(</span><span class="token punctuation">&#123;</span>x<span class="token punctuation">:</span> <span class="token number">4</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+	z <span class="token operator">=</span> x <span class="token operator">*</span> <span class="token number">2</span> <span class="token operator">+</span> <span class="token number">1</span>
+	<span class="token keyword">return</span> z <span class="token operator">+</span> y
+
+<span class="token comment"># trace code</span>
+<span class="token triple-quoted-string string">"""
+guard(x1 == 4)
+v1 = x1 * 2
+z1 = v1 + 1
+v2 = z1 + y1
+return(v2)
+"""</span>
+
+<span class="token comment"># optimized code</span>
+<span class="token triple-quoted-string string">"""
+guard(x1 == 4)
+v2 = 9 + y1
+return(v2)
+"""</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>这里需要<code>guard</code>的执行代价低于被折叠的算术操作的代价。</p>
+<h4 id="Operation-Fold"><a href="#Operation-Fold" class="headerlink" title="Operation Fold"></a>Operation Fold</h4><p>跟Constant Fold类似，Operation同样可以被折叠，这种被称为<code>trace-elidable</code>，如果调用的函数满足<code>trace-elidable</code>（某些paper里也叫<code>elidable function</code>），意味着使用相同参数对函数的连续调用总是返回相同的结果，并且函数功能无副作用或幂等作用。根据此定义，对该函数的调用可以直接替换成调用结果。</p>
+<p>举例来讲</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">class</span> <span class="token class-name">A</span><span class="token punctuation">(</span><span class="token builtin">object</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+  <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    self<span class="token punctuation">.</span>x <span class="token operator">=</span> x
+    self<span class="token punctuation">.</span>y <span class="token operator">=</span> y
+  
+  <span class="token keyword">def</span> <span class="token function">f</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> val<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    promote<span class="token punctuation">(</span>self<span class="token punctuation">)</span>
+    self<span class="token punctuation">.</span>y <span class="token operator">=</span> self<span class="token punctuation">.</span>c<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> val
+    
+  <span class="token decorator annotation punctuation">@elidable</span>
+  <span class="token keyword">def</span> <span class="token function">c</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    promote<span class="token punctuation">(</span>self<span class="token punctuation">.</span>x<span class="token punctuation">)</span>
+    <span class="token keyword">return</span> self<span class="token punctuation">.</span>x <span class="token operator">*</span> <span class="token number">2</span> <span class="token operator">+</span> <span class="token number">1</span>
+
+<span class="token comment"># promotion &#123;self: 0xb73984a8&#125;</span>
+<span class="token triple-quoted-string string">"""
+guard(a1 == 0xb73984a8)
+v1 = A.c(a1)
+v2 = v1 + val1
+a1.y = v2
+"""</span>
+
+<span class="token comment"># promotion &#123;self: 0xb73984a8, self.x: 4&#125;</span>
+<span class="token triple-quoted-string string">"""
+guard(a1 == 0xb73984a8)
+v2 = 9 + val1
+a1.y = v2
+"""</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>首先<code>promote</code>的是self，为了保证函数<code>f</code>中的调用<code>self.c</code>就是下面声明的版本，进而继续假设访问的<code>self.x</code>的值为4，如此就可以将<code>self.c()</code>的函数调用折叠。</p>
+<h4 id="Together"><a href="#Together" class="headerlink" title="Together"></a>Together</h4><h4 id="Making-Instance-Attributes-Faster"><a href="#Making-Instance-Attributes-Faster" class="headerlink" title="Making Instance Attributes Faster"></a>Making Instance Attributes Faster</h4><p>将上述两种优化一起使用时，最直观的好处就是可以加快对于attribute的访问。</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">class</span> <span class="token class-name">Instance</span><span class="token punctuation">(</span><span class="token builtin">object</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+  <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> cls<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    self<span class="token punctuation">.</span>__class__ <span class="token operator">=</span> cls
+    self<span class="token punctuation">.</span>attrs <span class="token operator">=</span> <span class="token punctuation">[</span> <span class="token boolean">None</span> <span class="token punctuation">]</span> <span class="token operator">*</span> cls<span class="token punctuation">.</span>attr_size<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">for</span> attr_name <span class="token keyword">in</span> cls<span class="token punctuation">.</span>attr_names<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+      attr_hash <span class="token operator">=</span> <span class="token builtin">hash</span><span class="token punctuation">(</span>attr_name<span class="token punctuation">)</span>
+      <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+      	index <span class="token operator">=</span> attr_hash <span class="token operator">%</span> cls<span class="token punctuation">.</span>attr_size<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>attrs<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+          self<span class="token punctuation">.</span>attrs<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">(</span>attr_name<span class="token punctuation">,</span> <span class="token boolean">None</span><span class="token punctuation">)</span>
+          <span class="token keyword">break</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+          attr_hash <span class="token operator">>></span><span class="token operator">=</span> <span class="token number">1</span>
+  
+  <span class="token keyword">def</span> <span class="token function">get_attr</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> name<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    attr_hash <span class="token operator">=</span> <span class="token builtin">hash</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+      index <span class="token operator">=</span> attr_hash <span class="token operator">%</span> <span class="token builtin">len</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>attrs<span class="token punctuation">)</span>
+      <span class="token keyword">if</span> self<span class="token punctuation">.</span>attrs<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">==</span> name<span class="token punctuation">:</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>attrs<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span>
+      <span class="token keyword">else</span><span class="token punctuation">:</span>
+        attr_hash <span class="token operator">>></span><span class="token operator">=</span> <span class="token number">1</span>
+      <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>以上述为例，采用dict的方式实现一个Instance，那么对于一个指定的实例，并且<code>self.attrs</code>的容量没有变化的情况下（变化的情况是有额外的，没有在class中声明的属性产生），它的每个属性的在<code>self.attrs</code>中的下标应该是保持不变的。这意味着，如果<code>self</code>相同，可以使用直接的下标来访问属性。</p>
+<div class="code-wrapper"><pre class="line-numbers language-python" data-language="python"><code class="language-python">a <span class="token operator">=</span> inst<span class="token punctuation">.</span>get_attr<span class="token punctuation">(</span><span class="token string">"a"</span><span class="token punctuation">)</span>
+
+<span class="token comment"># trace code: promotion &#123;index_of_a : 0&#125;</span>
+<span class="token triple-quoted-string string">"""
+guard(inst1 == 0xb73984a8)
+a1 = inst1.attrs[0][1]
+"""</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<h4 id="Versioning-of-Classes"><a href="#Versioning-of-Classes" class="headerlink" title="Versioning of Classes"></a>Versioning of Classes</h4><p>除了属性意外，我们更希望的是Class.find_method方法是可折叠的。但这不可能，因为更改类本身总是有可能的。每次类更改时，find_method都可能返回一个新值。因此，我们为每个类提供一个Version对象，每当类发生变化（即方法字典变化）时，该对象就会改变。这意味着对于给定的（名称、版本）对，调用Methods.get()的结果总是相同的。</p>
+<h3 id="Real-World-Considerations"><a href="#Real-World-Considerations" class="headerlink" title="Real-World Considerations"></a>Real-World Considerations</h3><p>现实世界中，由于Python的object模型要复杂得多，因此需要做一些额外的工作。</p>
+<p>需要解决的第一个问题是Python支持(多)继承。因此，在类中查找方法需要考虑整个方法解析顺序中的所有类。这使得类的版本控制更加复杂。如果更改了类，则其版本也会更改。同时，从它继承的所有类的版本也需要递归更改。这使得变更代价高昂，但它们应该是罕见的。另一方面，复杂类层次结构中的方法查找与上面的简单对象模型中一样，可以进行优化。</p>
+<p>另一个优化是，在实践中，实例的形状与其类相关。在PyPy的Python解释器中，我们将实例存储在对应的类上，这可以有效减少trace过程中的guard。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/paper%E9%98%85%E8%AF%BB/">paper阅读</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/optimization/">optimization</a>
+                    
+                      <a class="hover-with-bg" href="/tags/compiler/">compiler</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/02/24/impact-of-meta-tracing/">
+                        <span class="hidden-mobile">The Impact of Meta-Tracing on VM Design and Implementation</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+              <!-- Comments -->
+              <article class="comments" id="comments" lazyload>
+                
+                  
+                
+                
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#comments', function() {
+      var light = 'github-light';
+      var dark = 'github-dark';
+      var schema = document.documentElement.getAttribute('data-user-color-scheme');
+      if (schema === 'dark') {
+        schema = dark;
+      } else {
+        schema = light;
+      }
+      window.UtterancesThemeLight = light;
+      window.UtterancesThemeDark = dark;
+      var s = document.createElement('script');
+      s.setAttribute('src', 'https://utteranc.es/client.js');
+      s.setAttribute('repo', 'penguin-wwy/gitment');
+      s.setAttribute('issue-term', 'url');
+      
+      s.setAttribute('label', 'utterances');
+      
+      s.setAttribute('theme', schema);
+      s.setAttribute('crossorigin', 'anonymous');
+      document.getElementById('comments').appendChild(s);
+    })
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+              </article>
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+  <!-- 备案信息 -->
+  <div class="beian">
+    <span>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow noopener">
+        京ICP备17069049号-1
+      </a>
+    </span>
+    
+  </div>
+
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+    
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
