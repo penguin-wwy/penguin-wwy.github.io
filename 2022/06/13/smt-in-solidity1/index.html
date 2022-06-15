@@ -1,0 +1,661 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/header.png">
+  <link rel="icon" href="/img/header.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="penguin-wwy">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Solidity实现了一种基于SMT（Satisfiability Modulo Theories）和Horn逻辑的形式化验证方法。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="solidity中的SMT（1）">
+<meta property="og:url" content="http://example.com/2022/06/13/smt-in-solidity1/index.html">
+<meta property="og:site_name" content="懒得想标题">
+<meta property="og:description" content="Solidity实现了一种基于SMT（Satisfiability Modulo Theories）和Horn逻辑的形式化验证方法。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-06-13T14:53:48.000Z">
+<meta property="article:modified_time" content="2022-06-14T17:02:36.911Z">
+<meta property="article:author" content="penguin-wwy">
+<meta property="article:tag" content="SMT">
+<meta property="article:tag" content="formula">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  <title>solidity中的SMT（1） - 懒得想标题</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      
+        
+          
+          
+          
+        
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-solarizedlight.min.css" />
+      
+      
+        <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.css" />
+      
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.13","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>懒到没有标题</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/banner.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="solidity中的SMT（1）">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-06-13 22:53" pubdate>
+        2022年6月13日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      34 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">solidity中的SMT（1）</h1>
+            
+            <div class="markdown-body">
+              <h3 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h3><p>Solidity实现了一种基于SMT（<strong>Satisfiability Modulo Theories</strong>）和Horn逻辑的形式化验证方法。<code>SMTChecker</code>模块自动尝试证明代码满足require和assert语句所给出的规范。也就是说，它将require语句视为某种假设，并试图证明assert语句中的条件始终为真。如果发现断言失败，可能会给用户一个反例，说明断言是如何被违反的。如果<code>SMTChecker</code>对一个属性没有给出警告，这意味着该属性是可满足的。</p>
+<p>如此，solidity便可以在compile time进行下列属性的检查：</p>
+<ul>
+<li>Arithmetic underflow and overflow.</li>
+<li>Division by zero.</li>
+<li>Trivial conditions and unreachable code.</li>
+<li>Popping an empty array.</li>
+<li>Out of bounds index access.</li>
+<li>Insufficient funds for a transfer.</li>
+</ul>
+<h3 id="Example"><a href="#Example" class="headerlink" title="Example"></a>Example</h3><p>例如对于如下代码</p>
+<div class="code-wrapper"><pre class="line-numbers language-solidity" data-language="solidity"><code class="language-solidity"><span class="token comment">// SPDX-License-Identifier: GPL-3.0</span>
+<span class="token keyword">pragma</span> <span class="token keyword">solidity</span> <span class="token operator">>=</span><span class="token version number">0.8.4</span><span class="token punctuation">;</span>
+
+
+<span class="token keyword">contract</span> <span class="token class-name">Overflow</span> <span class="token punctuation">&#123;</span>
+    <span class="token builtin">uint</span> immutable x<span class="token punctuation">;</span>
+    <span class="token builtin">uint</span> immutable y<span class="token punctuation">;</span>
+
+    <span class="token keyword">function</span> <span class="token function">add</span><span class="token punctuation">(</span><span class="token builtin">uint</span> x_<span class="token punctuation">,</span> <span class="token builtin">uint</span> y_<span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token keyword">pure</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> x_ <span class="token operator">+</span> y_<span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token builtin">uint</span> x_<span class="token punctuation">,</span> <span class="token builtin">uint</span> y_<span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">(</span>x_<span class="token punctuation">,</span> y_<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token keyword">function</span> <span class="token function">stateAdd</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">public</span> <span class="token keyword">view</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> <span class="token function">add</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>我们希望在编译阶段可以发现潜在的<code>overflow</code>问题，就是<code>add</code>函数中的两个<code>uint</code>类型相加，可能导致的溢出。</p>
+<p>使用方法：</p>
+<div class="code-wrapper"><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">solc --model-checker-engine <span class="token string">"all"</span> --model-checker-targets <span class="token string">"underflow,overflow"</span> overflow.sol<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre></div>
+
+<p>其中</p>
+<p><code>model-checker-engine</code>指定了分析所使用的引擎，<code>model-checker-targets</code>指定使用的checker。执行的输出如下：</p>
+<div class="code-wrapper"><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Warning: This is a pre-release compiler version, please <span class="token keyword">do</span> not use it <span class="token keyword">in</span> production.
+
+Warning: CHC: Overflow <span class="token punctuation">(</span>resulting value larger than <span class="token number">2</span>**256 - <span class="token number">1</span><span class="token punctuation">)</span> happens here.
+Counterexample:
+x <span class="token operator">=</span> <span class="token number">115792089237316195423570985008687907853269984665640564039457584007913129639935</span>, y <span class="token operator">=</span> <span class="token number">1</span>
+ <span class="token operator">=</span> <span class="token number">0</span>
+
+Transaction trace:
+Overflow.constructor<span class="token punctuation">(</span><span class="token number">115792089237316195423570985008687907853269984665640564039457584007913129639935</span>, <span class="token number">1</span><span class="token punctuation">)</span>
+State: x <span class="token operator">=</span> <span class="token number">115792089237316195423570985008687907853269984665640564039457584007913129639935</span>, y <span class="token operator">=</span> <span class="token number">1</span>
+Overflow.stateAdd<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    Overflow.add<span class="token punctuation">(</span><span class="token number">115792089237316195423570985008687907853269984665640564039457584007913129639935</span>, <span class="token number">1</span><span class="token punctuation">)</span> -- internal call
+  --<span class="token operator">></span> overflow.sol:10:16:
+   <span class="token operator">|</span>
+<span class="token number">10</span> <span class="token operator">|</span>         <span class="token builtin class-name">return</span> x_ + y_<span class="token punctuation">;</span>
+   <span class="token operator">|</span>                ^^^^^^^<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<h3 id="Model-Checking-Engines"><a href="#Model-Checking-Engines" class="headerlink" title="Model Checking Engines"></a>Model Checking Engines</h3><p>Solidity目前实现有两种check engine。</p>
+<ul>
+<li>Bounded Model Checker (BMC)</li>
+<li>Constrained Horn Clauses (CHC)</li>
+</ul>
+<h4 id="BMC"><a href="#BMC" class="headerlink" title="BMC"></a>BMC</h4><p>BMC位于<code>libsolidity/formal/BMC.h</code>，是一种针对过程内的分析，也就是忽略函数调用带来的影响。循环也同样会被忽略。对于<code>internal function</code>如果没有递归那么则会做<code>inline</code>的分析。<code>extern call</code>在可能的情况下也会实现<code>inline</code>。总是，它是一种以轻量、快速为目标的引擎。</p>
+<h3 id="CHC"><a href="#CHC" class="headerlink" title="CHC"></a>CHC</h3><p>CHC位于<code>libsolidity/formal/CHC.h</code>。通过将合约的CFG建模为一个<code>Horn clauses</code>，实现分析。这样每个函数在被分析的时候都会考虑到在非限制情况下的side-effect（包括循环）。</p>
+<p>CHC的分析能力比BMC强大许多，代价是更多的资源消耗。</p>
+<p>一个直观的例子，对于上文的例子分别使用两种引擎并通过<code>perf</code>进行采样。</p>
+<p>CHC stat：</p>
+<div class="code-wrapper"><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">       <span class="token number">270.61</span> msec task-clock:u              <span class="token comment">#    0.997 CPUs utilized          </span>
+            <span class="token number">0</span>      context-switches:u        <span class="token comment">#    0.000 /sec                   </span>
+            <span class="token number">0</span>      cpu-migrations:u          <span class="token comment">#    0.000 /sec                   </span>
+       <span class="token number">18,773</span>      page-faults:u             <span class="token comment">#   69.374 K/sec                  </span>
+  <span class="token number">855,936</span>,173      cycles:u                  <span class="token comment">#    3.163 GHz                    </span>
+   <span class="token number">55,947</span>,528      stalled-cycles-frontend:u <span class="token comment">#    6.54% frontend cycles idle   </span>
+  <span class="token number">133,702</span>,666      stalled-cycles-backend:u  <span class="token comment">#   15.62% backend cycles idle    </span>
+<span class="token number">1,102</span>,148,341      instructions:u            <span class="token comment">#    1.29  insn per cycle         </span>
+                                             <span class="token comment">#    0.12  stalled cycles per insn</span>
+  <span class="token number">225,395</span>,044      branches:u                <span class="token comment">#  832.924 M/sec                  </span>
+    <span class="token number">6,859</span>,913      branch-misses:u           <span class="token comment">#    3.04% of all branches        </span>
+
+  <span class="token number">0.271336637</span> seconds <span class="token function">time</span> elapsed
+
+  <span class="token number">0.243750000</span> seconds user
+  <span class="token number">0.026701000</span> seconds sys<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>BMC stat：</p>
+<div class="code-wrapper"><pre class="line-numbers language-none"><code class="language-none">      36.98 msec task-clock:u              #    0.984 CPUs utilized          
+          0      context-switches:u        #    0.000 &#x2F;sec                   
+          0      cpu-migrations:u          #    0.000 &#x2F;sec                   
+      5,585      page-faults:u             #  151.010 K&#x2F;sec                  
+ 95,168,344      cycles:u                  #    2.573 GHz                    
+  5,230,800      stalled-cycles-frontend:u #    5.50% frontend cycles idle   
+ 16,163,554      stalled-cycles-backend:u  #   16.98% backend cycles idle    
+129,053,280      instructions:u            #    1.36  insn per cycle         
+                                           #    0.13  stalled cycles per insn
+ 22,862,839      branches:u                #  618.177 M&#x2F;sec                  
+    583,533      branch-misses:u           #    2.55% of all branches        
+
+0.037567873 seconds time elapsed
+
+0.027219000 seconds user
+0.010202000 seconds sys<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>前者几乎高出一个数量级，而如果代码越复杂，可以遇见性能差距就会越大。</p>
+<h3 id="Verfication-Targets"><a href="#Verfication-Targets" class="headerlink" title="Verfication Targets"></a>Verfication Targets</h3><p>当前已有的形式化规则：</p>
+<div class="code-wrapper"><pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">enum class VerificationTargetType &#123; 
+    ConstantCondition,
+    Underflow,
+    Overflow,
+    UnderOverflow,
+    DivByZero,
+    Balance,
+    Assert,
+    PopEmptyArray,
+    OutOfBounds 
+&#125;;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<h3 id="Custom-Annotation"><a href="#Custom-Annotation" class="headerlink" title="Custom Annotation"></a>Custom Annotation</h3><p>Solidity可以通过特定格式的注释标记函数的semantics，来提高SMT的分析效率（当然也可以用来降低准确性）。举例来说：</p>
+<div class="code-wrapper"><pre class="line-numbers language-solidity" data-language="solidity"><code class="language-solidity"><span class="token keyword">contract</span> <span class="token class-name">SMTAnnotation</span> <span class="token punctuation">&#123;</span>
+
+    <span class="token comment">/// @custom:smtchecker abstract-function-nondet</span>
+    <span class="token keyword">function</span> <span class="token function">no_effect</span><span class="token punctuation">(</span><span class="token builtin">uint</span> y_<span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token keyword">pure</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">return</span> y_<span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token keyword">function</span> <span class="token function">test_abstract</span><span class="token punctuation">(</span><span class="token builtin">uint</span> x_<span class="token punctuation">)</span> <span class="token keyword">public</span> <span class="token keyword">pure</span> <span class="token punctuation">&#123;</span>
+        <span class="token builtin">uint</span> y_ <span class="token operator">=</span> <span class="token function">no_effect</span><span class="token punctuation">(</span>x_<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">assert</span><span class="token punctuation">(</span>y_ <span class="token operator">==</span> x_<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+<p>正常情况下<code>CHC</code>是完全可以分析出<code>no_effect</code>的作用，对于表达式<code>assert(y_ == x_);</code>的结果为SAT。但是如果我们添加上一个<code>abstract-function-nondet</code>的annotation，那么<code>no_effect</code>就不会被SMT所使用，并且该annotation表代表的语义是返回一个<code>nondeterministic value</code>并且保持状态不变（即<code>view</code>或者<code>pure</code>语义），那么此时<code>CHC</code>就会给出警告。</p>
+<div class="code-wrapper"><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Warning: CHC: Assertion violation happens here.
+Counterexample:
+
+x_ <span class="token operator">=</span> <span class="token number">0</span>
+y_ <span class="token operator">=</span> <span class="token number">1</span>
+
+Transaction trace:
+SMTAnnotation.constructor<span class="token punctuation">(</span><span class="token punctuation">)</span>
+SMTAnnotation.test_abstract<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+    SMTAnnotation.plus_one<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span> -- internal call
+  --<span class="token operator">></span> overflow.sol:36:9:
+   <span class="token operator">|</span>
+<span class="token number">36</span> <span class="token operator">|</span>         assert<span class="token punctuation">(</span>y_ <span class="token operator">==</span> x_<span class="token punctuation">)</span><span class="token punctuation">;</span>
+   <span class="token operator">|</span>         ^^^^^^^^^^^^^^^^<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AF%AD%E8%A8%80/">程序语言</a>
+                    
+                      <a class="hover-with-bg" href="/categories/%E7%A8%8B%E5%BA%8F%E8%AF%AD%E8%A8%80/%E5%BD%A2%E5%BC%8F%E5%8C%96/">形式化</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/SMT/">SMT</a>
+                    
+                      <a class="hover-with-bg" href="/tags/formula/">formula</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/02/28/runtime-feedback-meta-tracing-jit/">
+                        <span class="hidden-mobile">Runtime feedback in a meta-tracing JIT for efficient dynamic languages</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+              <!-- Comments -->
+              <article class="comments" id="comments" lazyload>
+                
+                  
+                
+                
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#comments', function() {
+      var light = 'github-light';
+      var dark = 'github-dark';
+      var schema = document.documentElement.getAttribute('data-user-color-scheme');
+      if (schema === 'dark') {
+        schema = dark;
+      } else {
+        schema = light;
+      }
+      window.UtterancesThemeLight = light;
+      window.UtterancesThemeDark = dark;
+      var s = document.createElement('script');
+      s.setAttribute('src', 'https://utteranc.es/client.js');
+      s.setAttribute('repo', 'penguin-wwy/gitment');
+      s.setAttribute('issue-term', 'url');
+      
+      s.setAttribute('label', 'utterances');
+      
+      s.setAttribute('theme', schema);
+      s.setAttribute('crossorigin', 'anonymous');
+      document.getElementById('comments').appendChild(s);
+    })
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+              </article>
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+  <!-- 备案信息 -->
+  <div class="beian">
+    <span>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow noopener">
+        京ICP备17069049号-1
+      </a>
+    </span>
+    
+  </div>
+
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+    
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
